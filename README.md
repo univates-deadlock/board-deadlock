@@ -25,10 +25,10 @@ Nesta etapa, o objetivo do grupo é entender como funciona a operação atual da
 
 ## Integrantes
 
-- **Alexandra Padilha**
-- **Diogo Felipe Zanco**
-- **Mateus Carniel Brambilla**
-- **Tainá Luiza Schmidt**
+- [**Alexandra Padilha**](https://github.com/alexandrapadilha1)
+- [**Diogo Felipe Zanco**](https://github.com/DiogoFZanco)
+- [**Mateus Carniel Brambilla**](https://github.com/matbdev)
+- [**Tainá Luiza Schmidt**](https://github.com/TainaSchmidt)
 
 ## Projeto
 
