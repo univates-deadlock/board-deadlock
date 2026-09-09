@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/techpro-logo.png" alt="TechPro" width="420">
+<img src="assets/images/common/techpro-logo.png" alt="TechPro" width="420">
 
 <br>
 
