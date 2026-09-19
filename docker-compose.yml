@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-techpro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techpro}
+      POSTGRES_DB: ${POSTGRES_DB:-techpro}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./api
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-techpro}:${POSTGRES_PASSWORD:-techpro}@db:5432/${POSTGRES_DB:-techpro}
+    ports:
+      - "127.0.0.1:${API_PORT:-4000}:4000"
+    volumes:
+      - ./api:/app
+      - api_node_modules:/app/node_modules
+      - api_generated:/app/generated
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-4000}
+      API_INTERNAL_URL: http://api:4000
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  api_node_modules:
+  api_generated:
+  frontend_node_modules:
+  frontend_next:

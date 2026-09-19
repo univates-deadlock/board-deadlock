@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.next/
+api/generated/
+.superpowers/
+.worktrees/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example

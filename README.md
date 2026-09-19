@@ -61,6 +61,40 @@ A organização das atividades e o acompanhamento do projeto estão disponíveis
 
 [![GitHub Project](https://img.shields.io/badge/GitHub_Project-Acessar_Board-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/orgs/univates-deadlock/projects/2/views/1)
 
+## Desenvolvimento local
+
+Requisitos: Node.js 24, npm e Docker com Compose. O frontend Next.js fica em `frontend/`, a API Express/TypeScript em `api/` e o PostgreSQL é iniciado pelo Compose. Cada aplicação mantém seu próprio `package-lock.json`.
+
+Para iniciar a aplicação completa:
+
+```bash
+docker compose up --build
+```
+
+O frontend fica em <http://localhost:3000>, a API em <http://localhost:4000> e a checagem da API em <http://localhost:4000/health>. O PostgreSQL fica disponível em `localhost:5432`. As portas são publicadas apenas em `127.0.0.1`. As credenciais locais padrão são `techpro`/`techpro` e podem ser alteradas com `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB` no ambiente do Compose. `POSTGRES_PORT`, `API_PORT` e `FRONTEND_PORT` alteram as portas publicadas no host. O Compose usa `db` como hostname do banco dentro dos containers; no host, a URL usa `localhost`.
+
+Para desenvolver com Node no host e apenas o banco no Docker:
+
+```bash
+docker compose up -d db
+cp api/.env.example api/.env
+npm run install:all
+npm run dev --prefix api
+npm run dev --prefix frontend
+```
+
+Os dois últimos comandos rodam em terminais separados. `api/.env` contém `PORT` e `DATABASE_URL`; o exemplo usa somente credenciais de desenvolvimento. Não salve credenciais reais no repositório. No Compose, dependências, cliente Prisma gerado e cache do Next.js ficam em volumes próprios para não alterar a propriedade desses arquivos no host. `docker compose down` para os serviços e preserva os dados no volume do PostgreSQL.
+
+Para executar as checagens locais depois de instalar as dependências:
+
+```bash
+npm run check
+npm run db:validate --prefix api
+npm run db:generate --prefix api
+```
+
+O CI executa lint, verificação de tipos, testes e build da API, além de lint, tipos e build do frontend. A API inclui um teste inicial do endpoint `/health` e da configuração de ambiente. O Prisma 7 e seu adaptador PostgreSQL estão instalados; o schema ainda não contém modelos de negócio nem migrations. Eles serão adicionados quando a persistência das funcionalidades for implementada. `axios` já está instalado no frontend para futuras chamadas à API.
+
 ---
 
 <div align="center">
