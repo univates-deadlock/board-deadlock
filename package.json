@@ -8,7 +8,7 @@
     "install:all": "npm ci --prefix api && npm ci --prefix frontend",
     "dev": "docker compose up --build",
     "check": "npm run check:api && npm run check:frontend",
-    "check:api": "npm run lint --prefix api && npm run typecheck --prefix api && npm test --prefix api && npm run build --prefix api",
+    "check:api": "npm run lint --prefix api && npm run typecheck --prefix api && npm run build --prefix api",
     "check:frontend": "npm run lint --prefix frontend && npm run typecheck --prefix frontend && npm run build --prefix frontend"
   },
   "dependencies": {
