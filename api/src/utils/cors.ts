@@ -1,8 +1,10 @@
 import cors from 'cors';
+import { env } from '../config/env.js';
 
 const cors_options = {
-    origin: process.env.FE_BASE_URL || 'https://localhost:5000',
+    origin: env.FE_BASE_URL,
     credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ['Content-Type', 'Authorization'],
     optionsSuccessStatus: 204
 };
