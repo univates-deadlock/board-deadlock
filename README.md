@@ -2,103 +2,240 @@
 
 <img src="assets/images/common/techpro-logo.png" alt="TechPro" width="420">
 
-<br>
-
 # TechPro
 
-![Status](https://img.shields.io/badge/status-Sprint%200-24345C?style=for-the-badge)
-![Disciplina](https://img.shields.io/badge/Laboratório%20de%20Programação%20para%20Internet-2026B-24345C?style=for-the-badge)
-[![GitHub Project](https://img.shields.io/badge/GitHub_Project-Acessar_Board-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/orgs/univates-deadlock/projects/2/views/1)
+Sistema interno para organizar o fluxo cliente → orçamento → serviço → visita.
+Projeto da disciplina de Laboratório de Programação para Internet da Univates.
 
 </div>
 
----
+## Estado atual e Parcial 1
 
-Projeto desenvolvido na disciplina de **Laboratório de Programação para Internet**, da Univates, durante o semestre **2026B**.
+Esta entrega implementa **autenticação/sessão e administração de usuários na API**.
+O usuário possui perfil `ADMIN`, `PLANNING` ou `TECHNICIAN`. Administradores podem
+cadastrar usuários com senha, consultar, editar, ativar e desativar. O login usa
+email e senha; sessões são persistidas no PostgreSQL e transportadas por cookies.
 
-O projeto tem como cliente a **TechPro** e está atualmente na etapa de levantamento e descoberta do problema, antes da definição dos requisitos e da implementação da solução.
+O schema já possui outras entidades do produto, mas seus CRUDs ainda precisam ser
+implementados pelos responsáveis. A página atual do frontend é a inicial do
+Next.js; a página institucional conforme o Figma e o segundo CRUD são outras
+tarefas da equipe. Não confunda o schema completo com endpoints já entregues.
 
-## Cliente
+Critérios informados para a Parcial 1:
 
-**TechPro**
-Nesta etapa, o objetivo do grupo é entender como funciona a operação atual da empresa, identificar os principais problemas enfrentados no dia a dia e levantar informações que servirão de base para a definição do produto.
+| Critério | Pontos | Evidência para apresentar |
+| --- | --- | --- |
+| Autenticação e sessão | 2,5 | login, consulta da sessão e logout |
+| Dois CRUDs | 3,0 | fluxos de cadastro, consulta, edição e exclusão |
+| Site minimamente funcional | 2,0 | página institucional conforme Figma |
+| README de execução | 0,5 | instalação e execução reproduzíveis |
+| Processo e robustez | 2,0 | divisão de tarefas, Git, validação e erros |
 
-## Integrantes
+Testes automatizados foram retirados do escopo desta entrega. A API foi verificada
+funcionalmente por HTTP com PostgreSQL separado e dados fictícios. O CI e
+`npm run check` executam lint, tipos e build, sem exigir suíte de testes.
 
-- [**Alexandra Padilha**](https://github.com/alexandrapadilha1)
-- [**Diogo Felipe Zanco**](https://github.com/DiogoFZanco)
-- [**Mateus Carniel Brambilla**](https://github.com/matbdev)
-- [**Tainá Luiza Schmidt**](https://github.com/TainaSchmidt)
+## Equipe e referências
 
-## Projeto
+- [Alexandra Padilha](https://github.com/alexandrapadilha1)
+- [Diogo Felipe Zanco](https://github.com/DiogoFZanco)
+- [Mateus Carniel Brambilla](https://github.com/matbdev)
+- [Tainá Luiza Schmidt](https://github.com/TainaSchmidt)
 
-O projeto está atualmente na **Sprint 0**, com foco na descoberta do problema e no levantamento inicial de informações que servirão de base para a definição do produto.
+A divisão nominal das tarefas deve refletir o combinado real no
+[board do GitHub](https://github.com/orgs/univates-deadlock/projects/2/views/1).
+Nos slides, associem cada entrega ao nome de quem a implementou.
 
-A entrevista com o cliente está prevista para **26 de agosto de 2026**.
+- [Figma Desktop](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=53-2&t=6ckapUM5hbwQRKYA-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=53%3A2)
+- [Figma Mobile](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=318-3&p=f&t=6ckapUM5hbwQRKYA-0&scaling=scale-down&content-scaling=fixed&page-id=318%3A3&starting-point-node-id=318%3A3)
 
-## Documentação
+## Estrutura
 
-A documentação da etapa de descoberta está organizada nos seguintes materiais:
+```text
+api/          Express, TypeScript, Zod, Prisma, autenticação e usuários
+frontend/     Next.js App Router, React e Tailwind
+assets/       logo e imagens dos documentos
+docs/        requisitos, contexto e contrato da API
+.github/      checagens no GitHub Actions
+```
 
-### Contexto da TechPro: [`docs/contexto-cliente.md`](docs/contexto-cliente.md)
+A API e o frontend possuem `package.json` e lockfile próprios. Instale uma
+dependência na aplicação que a utiliza, por exemplo `npm install pacote --prefix api`.
+O Prisma pertence a `api/`; não execute `prisma init` na raiz.
+Uma pasta local `api/frontend/` não é a aplicação oficial e não é usada pelos
+comandos abaixo; os arquivos preexistentes nela foram preservados.
 
-Reúne as informações que puderam ser identificadas previamente sobre a empresa a partir de materiais institucionais, presença pública e protótipos existentes.
+## Requisitos
 
-### Perguntas para o cliente: [`docs/perguntas-cliente.md`](docs/perguntas-cliente.md)
+- Node.js **24**, com npm.
+- Docker com plugin Compose, daemon ativo e acesso liberado ao usuário local.
+- Portas locais 3000 (frontend), 4000 (API) e 5432 (PostgreSQL) disponíveis.
 
-Contém a hipótese inicial do problema, a ideia de caminho e o roteiro de perguntas preparado para a conversa com a TechPro.
+## Primeiro acesso: configurar o ambiente
 
-## Protótipos da TechPro
+Clone o repositório, entre na raiz e instale as dependências:
 
-Os protótipos utilizados como material de referência estão disponíveis no Figma:
+```bash
+npm run install:all
+```
 
-- [Protótipo Desktop](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=53-2&t=6ckapUM5hbwQRKYA-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=53%3A2)
-- [Protótipo Mobile](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=318-3&p=f&t=6ckapUM5hbwQRKYA-0&scaling=scale-down&content-scaling=fixed&page-id=318%3A2&starting-point-node-id=318%3A3)
+Se ainda não existe `api/.env`, crie-o a partir de `api/.env.example`.
 
-## Board
+```bash
+if [ ! -f api/.env ]; then
+  cp api/.env.example api/.env
+fi
+```
+ Preserve um
+arquivo existente. Preencha `BETTER_AUTH_SECRET` com um valor aleatório de pelo
+menos 32 caracteres; o [README da API](api/README.md#instalar-e-configurar) contém
+um comando que gera e grava o secret sem exibi-lo. O arquivo deve conter:
 
-A organização das atividades e o acompanhamento do projeto estão disponíveis no board:
+| Variável | Desenvolvimento local |
+| --- | --- |
+| `PORT` | `4000` |
+| `DATABASE_URL` | `postgresql://techpro:techpro@localhost:5432/techpro` |
+| `BETTER_AUTH_URL` | `http://localhost:4000` |
+| `FE_BASE_URL` | `http://localhost:3000` |
+| `BETTER_AUTH_SECRET` | secret local aleatório |
 
-[![GitHub Project](https://img.shields.io/badge/GitHub_Project-Acessar_Board-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/orgs/univates-deadlock/projects/2/views/1)
+São credenciais locais de desenvolvimento. O `.env` é ignorado pelo Git e não
+deve conter valores reais compartilhados em commits, slides ou prints.
 
-## Desenvolvimento local
+## Opção A — stack completa no Docker
 
-Requisitos: Node.js 24, npm e Docker com Compose. O frontend Next.js fica em `frontend/`, a API Express/TypeScript em `api/` e o PostgreSQL é iniciado pelo Compose. Cada aplicação mantém seu próprio `package-lock.json`.
-
-Para iniciar a aplicação completa:
+Após configurar `api/.env`:
 
 ```bash
 docker compose up --build
 ```
 
-O frontend fica em <http://localhost:3000>, a API em <http://localhost:4000> e a checagem da API em <http://localhost:4000/health>. O PostgreSQL fica disponível em `localhost:5432`. As portas são publicadas apenas em `127.0.0.1`. As credenciais locais padrão são `techpro`/`techpro` e podem ser alteradas com `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB` no ambiente do Compose. `POSTGRES_PORT`, `API_PORT` e `FRONTEND_PORT` alteram as portas publicadas no host. O Compose usa `db` como hostname do banco dentro dos containers; no host, a URL usa `localhost`.
+O PostgreSQL é iniciado primeiro; a API gera o cliente Prisma, aplica migrations
+e inicia o servidor. O frontend inicia em seguida. Para criar o primeiro
+administrador, abra outro terminal e siga
+[este procedimento](api/README.md#criar-o-primeiro-administrador), usando a variante
+`docker compose exec` indicada no guia. Depois faça login usando esse cadastro.
 
-Para desenvolver com Node no host e apenas o banco no Docker:
+| Serviço | Endereço no host |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| API | http://localhost:4000 |
+| Health HTTP | http://localhost:4000/api/health |
+| PostgreSQL | localhost:5432 |
+
+Dentro do Compose, a API usa `db:5432`; no host, a URL do banco usa `localhost`.
+As portas são publicadas em `127.0.0.1`. Dependências, cliente Prisma e cache do
+Next.js usam volumes próprios, evitando alterações de propriedade no host.
+
+```bash
+docker compose ps
+docker compose logs -f api
+docker compose down
+```
+
+`down` preserva o volume do banco. Não adicione `-v` se quiser manter seus dados.
+As variáveis `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`,
+`API_PORT` e `FRONTEND_PORT` permitem ajustar o Compose. Ao trocar portas/hosts,
+ajuste também as URLs do ambiente e a origem permitida.
+
+## Opção B — Node no host e banco no Docker
 
 ```bash
 docker compose up -d db
-cp api/.env.example api/.env
-npm run install:all
+npm run db:validate --prefix api
+npm run db:generate --prefix api
+npm run db:migrate --prefix api
+```
+
+Crie o primeiro administrador seguindo o
+[guia da API](api/README.md#criar-o-primeiro-administrador). Depois, em terminais
+separados:
+
+```bash
 npm run dev --prefix api
+```
+
+```bash
 npm run dev --prefix frontend
 ```
 
-Os dois últimos comandos rodam em terminais separados. `api/.env` contém `PORT` e `DATABASE_URL`; o exemplo usa somente credenciais de desenvolvimento. Não salve credenciais reais no repositório. No Compose, dependências, cliente Prisma gerado e cache do Next.js ficam em volumes próprios para não alterar a propriedade desses arquivos no host. `docker compose down` para os serviços e preserva os dados no volume do PostgreSQL.
+O cliente do frontend usa `NEXT_PUBLIC_API_URL`, com fallback para
+`http://localhost:4000`. Para outra URL, configure `frontend/.env.local` e reinicie
+o Next.js. Veja [frontend/README.md](frontend/README.md).
 
-Para executar as checagens locais depois de instalar as dependências:
+## Como entender a implementação
+
+Um cadastro percorre:
+
+```text
+requisição POST /api/users
+→ middleware de sessão: quem está chamando?
+→ middleware de perfil: essa pessoa é ADMIN?
+→ controller: o JSON e os parâmetros são válidos?
+→ service: aplicar regras, hash e transação
+→ Prisma/PostgreSQL: persistir usuário e credencial
+→ resposta 201 com campos públicos
+```
+
+Login/logout são atendidos pelo Better Auth. O CRUD usa rotas, controllers,
+schemas e services próprios. A senha nunca aparece na resposta do CRUD.
+`DELETE /api/users/:id` desativa em vez de apagar, preservando os vínculos de
+negócio. Confirme com o professor a aceitação da exclusão lógica na rubrica.
+
+Leitura recomendada:
+
+1. [Guia da API](api/README.md): instalação, autenticação e arquitetura.
+2. [Contrato e demonstração](docs/api-usuarios.md): requests completos com curl.
+3. READMEs em `api/src/`: responsabilidade de cada camada e padrão para os colegas.
+4. [Prisma](api/prisma/README.md): modelos e migrations.
+5. [Requisitos](docs/documento-requisitos.md): produto esperado e regras.
+
+## Checagens e processo de trabalho
 
 ```bash
 npm run check
+```
+
+Ou separadamente:
+
+```bash
+npm run check:api
+npm run check:frontend
 npm run db:validate --prefix api
 npm run db:generate --prefix api
 ```
 
-O CI executa lint, verificação de tipos, testes e build da API, além de lint, tipos e build do frontend. A API inclui um teste inicial do endpoint `/health` e da configuração de ambiente. O Prisma 7 e seu adaptador PostgreSQL estão instalados; o schema ainda não contém modelos de negócio nem migrations. Eles serão adicionados quando a persistência das funcionalidades for implementada. `axios` já está instalado no frontend para futuras chamadas à API.
+`check` executa lint, verificação TypeScript e build de ambas as aplicações.
+`npm test --prefix api` permanece como comando para uma futura suíte; hoje não há
+arquivos de teste e ele não integra a checagem da Parcial 1. Builds do frontend
+podem precisar de rede para baixar as fontes configuradas em `next/font/google`.
 
----
+Para uma tarefa: alinhe o escopo no board, trabalhe em uma branch, faça commits
+com alterações relacionadas, confira a execução/checagens e abra PR para revisão
+da equipe. A apresentação deve mostrar histórico e branches reais; este trabalho
+não criou commits ou publicou alterações automaticamente.
 
-<div align="center">
+## Preparar a apresentação
 
-**Laboratório de Programação para Internet · Univates · 2026B**
+Os grupos terão dez minutos de apresentação e o professor cinco minutos.
+Montem slides com:
 
-</div>
+- divisão nominal de tarefas;
+- prints/GIFs/vídeo do frontend;
+- fluxo de login, sessão e logout;
+- os dois CRUDs, incluindo erros e validação;
+- histórico de commits e branches do GitHub;
+- dificuldades, decisões e aprendizados.
+
+Todos devem entender a parte que implementaram, mesmo quem não apresentar.
+Use dados fictícios e o roteiro de [API de usuários](docs/api-usuarios.md).
+
+## Documentação do produto
+
+- [Índice da documentação](docs/README.md)
+- [Contexto do cliente](docs/contexto-cliente.md)
+- [Perguntas ao cliente](docs/perguntas-cliente.md)
+- [Documento de requisitos](docs/documento-requisitos.md)
+
+O sistema existente de estoque/OS permanece separado. Não há integração
+automática nesta entrega.

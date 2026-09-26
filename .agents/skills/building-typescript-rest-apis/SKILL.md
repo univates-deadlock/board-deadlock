@@ -14,13 +14,16 @@ Preserve and extend existing project conventions before creating new ones. Build
 Inspect the repository and the closest existing implementation first:
 
 1. Read `AGENTS.md`, `CLAUDE.md`, or equivalent project instructions when present.
-2. Trace the current API architecture from route registration through request handling, business rules, persistence, and error mapping.
-3. Find similar endpoints and reuse their route shape, response format, status semantics, middleware, validation, and test style.
-4. Inspect existing authentication and authorization enforcement before adding protected behavior.
-5. Inspect schemas, database access, Prisma models/migrations, constraints, and transaction patterns that affect the change.
-6. Inspect relevant tests before deciding what boundary to extend.
+2. Locate the package that runs the API: its manifest/scripts, lockfile or workspace setup, module configuration, environment loading, and bootstrap/app assembly.
+3. Trace the current API architecture from route registration through request handling, business rules, persistence, and error mapping. Distinguish application-owned endpoints from library-provided handlers; inspect middleware, validation, and policies for both. Models alone do not establish that endpoints exist.
+4. Find similar endpoints and reuse their route shape, response format, status semantics, middleware, validation, and test style.
+5. Inspect existing authentication and authorization enforcement and the typed request identity context before adding protected behavior.
+6. Inspect schemas, database access, Prisma models/migrations, constraints, and transaction patterns that affect the change.
+7. Inspect actual test files, applicable check commands, and the user's explicit verification scope before deciding what boundary to extend.
 
 Do not introduce Clean Architecture, DDD, repositories, services, classes, or new directory conventions solely because they are common elsewhere.
+
+For Express app assembly, middleware order, router prefixes, and typed identity context, see `references/express-application-structure.md`.
 
 ## HTTP boundary
 
@@ -47,7 +50,8 @@ Authentication establishes identity; authorization decides whether that identity
 
 - Enforce authorization on the server for every protected operation. Hidden frontend controls are not authorization.
 - Apply least privilege and reuse the project's existing policy, role, permission, or ownership model.
-- Do not trust roles, ownership, tenant identifiers, or permissions supplied directly by the client when the server can derive them from authenticated context or persisted data.
+- Derive caller identity and authority from verified context or persistence. Client fields may describe a target resource (including a role assigned by an authorized administrator), but must be validated and authorized separately.
+- Reuse the existing typed identity context, such as `res.locals` or `req.user`, throughout the request lifecycle; do not introduce a parallel session lookup or context convention by habit.
 - Use `401 Unauthorized` for missing/invalid authentication and `403 Forbidden` when an authenticated caller is not permitted, unless the project deliberately uses a different concealment strategy.
 
 See `references/authentication-and-authorization.md`.
@@ -99,6 +103,8 @@ Use a transaction when multiple database changes must succeed or fail as one bus
 
 ## Testing
 
+Choose verification according to repository checks and the user's explicit scope. If an automated suite applies, run it. If the user excludes automated tests, run applicable static checks and verify affected behavior in a safe environment; report that no automated suite was run. A test command in a manifest does not establish that test files exist. Preserve existing CI gates; do not add test infrastructure solely for this skill.
+
 Prefer tests that exercise observable API behavior over tests coupled to internal implementation details. Vitest and Supertest are good examples when already used by the project, but follow the repository's runner and helpers.
 
 For relevant endpoints, cover the cases that apply:
@@ -118,23 +124,22 @@ Use integration tests for HTTP-to-persistence behavior when practical, and mock 
 
 Before considering API work complete:
 
-- run the project's lint command;
-- run the project's typecheck command;
-- run relevant tests and the full suite when appropriate;
-- run the build when the project defines one;
-- run Prisma validation/generation commands when applicable;
+- run applicable lint, typecheck, and build commands in the package that owns the API;
+- run the applicable automated suite according to the verification scope above, or record safe behavior checks and the absence of an automated run;
+- run Prisma schema validation when schema/configuration changes require it and client generation when schema/generator changes affect the client;
 - review generated migrations and their data/cascade impact when schema changes exist;
 - verify no credential or secret was added;
 - verify authorization is enforced on the server;
 - verify important error paths are covered and responses do not expose internals.
 
-Use commands defined by the consuming repository; this skill does not prescribe package-manager scripts.
+Use commands defined by the consuming repository; this skill does not prescribe package-manager scripts. Report executed commands, results, and any unverified behavior or environment limitation. Do not claim checks passed if they were not run.
 
 ## References
 
 Read only the references relevant to the task:
 
 - `references/validation-and-errors.md` — runtime validation, request parsing, error contracts, and HTTP status mapping.
+- `references/express-application-structure.md` — adaptable app assembly, request flow, typed identity context, middleware order, router prefixes, and version-aware error propagation.
 - `references/authentication-and-authorization.md` — identity, RBAC/permissions, ownership, tenant boundaries, and server-side enforcement.
 - `references/prisma-and-transactions.md` — Prisma/PostgreSQL query design, constraints, transactions, concurrency, indexes, and raw SQL.
-- `references/api-testing.md` — behavior-focused API testing, database isolation, fixtures, mocks, authorization, and persistence assertions.
+- `references/api-testing.md` — verification scope, safe manual checks, behavior-focused API testing, database isolation, fixtures, mocks, authorization, and persistence assertions.

@@ -1,15 +1,39 @@
-import express from "express";
+import express, { json } from "express";
+import "dotenv/config";
+
+// Better Auth
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./utils/auth.js";
+
+// Utils
 import helmet from "helmet";
+import cors from "./utils/cors.js";
+import rateLimit from "./utils/rateLimit.js";
+import { globalErrorHandler } from "./middlewares/ErrorHandler.js";
 
-export function createApp(): express.Express {
-  const app = express();
+// Routes Import
+import healthRoute from "./routes/health.route.js";
+import userRoute from "./routes/user.route.js";
 
-  app.use(helmet());
-  app.use(express.json());
+// Creates App
+const app = express();
 
-  app.get("/health", (_request, response) => {
-    response.json({ status: "ok" });
-  });
+// Initial Utils
+app.use(cors);
+app.use(helmet());
 
-  return app;
-}
+// Better auth
+app.use(rateLimit);
+app.all("/api/auth/*splat", toNodeHandler(auth));
+
+// Rest of Utils
+app.use(json({ limit: "100kb" }));
+
+// Routes Use
+app.use('/api/health', healthRoute);
+app.use('/api/users', userRoute);
+
+// Global Error Handler
+app.use(globalErrorHandler);
+
+export default app;

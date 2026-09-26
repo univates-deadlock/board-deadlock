@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npm ci --offline --no-audit && npm run db:generate && npm run dev"]
+CMD ["sh", "-c", "npm ci --offline --no-audit && npm run db:generate && npm run db:migrate && npm run dev"]

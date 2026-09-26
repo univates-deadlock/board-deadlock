@@ -2,6 +2,21 @@
 
 Use the repository's current Prisma client lifecycle, model conventions, migration workflow, and database helpers. Optimize for correctness and clarity before adding abstraction.
 
+## Package setup and migrations
+
+Before copying setup code, inspect the installed Prisma version, schema and configuration location, generator provider/output, generated client imports, database adapter, and ESM/module resolution. Use official documentation for that version when necessary; examples from another generator or major version may not match this application.
+
+Install dependencies in the package that consumes them and update its corresponding lockfile, or follow the existing workspace's shared lockfile rules. A separate API and frontend need not share dependency ownership. Do not edit installed dependencies or generated client files manually.
+
+Distinguish the operations in the repository's workflow:
+
+- schema validation checks schema/configuration validity;
+- client generation refreshes generated code;
+- migration creation records a database change for review;
+- migration application changes the target database.
+
+Validation/generation alone do not apply a schema change. Use the owning package's scripts and version-appropriate commands; do not run reset or development migration commands against production. Preserve already-applied migrations, review generated SQL for data loss and cascade effects, and confirm the target environment before applying migrations. Report which operations actually ran.
+
 ## Query design
 
 Keep each query's intent visible. Use `select` or `include` deliberately so the endpoint loads the relations and fields it actually needs. This is especially important for large relations and sensitive fields.
@@ -29,17 +44,21 @@ Translate known constraint violations into the project's expected API errors. Do
 
 ## Transactions
 
-Use a transaction when a business operation requires multiple reads/writes to commit atomically. Examples include moving value between records, creating a parent plus dependent state that must not exist partially, or checking and updating state under a consistency requirement.
+Use a transaction when a business operation requires multiple reads/writes to commit atomically. Examples include moving value between records or checking and updating state under a consistency requirement.
+
+A nested write already provides atomicity for supported related writes, such as creating a parent with dependent records. Use an interactive transaction when reads and subsequent decisions/writes need to share a transaction, or the operation cannot be expressed as an appropriate nested/batch write. Do not add a transaction wrapper merely for symmetry. Confirm any isolation/locking requirement separately; atomic writes alone do not resolve every concurrency invariant.
 
 Avoid transactions around a single ordinary write when no additional consistency guarantee is needed. Transactions add locking/contention and should stay short.
 
-Do not put slow external calls such as email, object storage, third-party APIs, or long computation inside a database transaction. Commit database state first when safe, then coordinate external side effects using the project's established mechanism.
+Do not put slow external calls such as email, object storage, third-party APIs, or long computation inside a database transaction. Keep password hashing and other expensive computation outside when possible without weakening the operation's invariant. Commit database state first when safe, then coordinate external side effects using the project's established mechanism.
 
 ## Concurrency
 
 A check-then-write sequence can race. When concurrent mutation matters, rely on appropriate uniqueness/foreign-key constraints, conditional updates, version fields, locking/isolation choices, or another established strategy rather than assuming requests execute sequentially.
 
 If the chosen approach can produce transient serialization/deadlock errors, handle retries only where the project and operation can safely retry.
+
+Verify how conflicts reach the application error layer and whether a retry could duplicate external effects. Do not impose automatic retries, `Serializable`, or SQL locks on every operation.
 
 ## Indexes
 
