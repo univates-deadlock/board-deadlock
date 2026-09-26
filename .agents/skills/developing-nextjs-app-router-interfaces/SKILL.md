@@ -14,7 +14,7 @@ Understand the current components, tokens, styling, rendering, data fetching, st
 ## Before changing code
 
 1. Read `AGENTS.md`, `CLAUDE.md`, or equivalent instructions.
-2. Inspect the App Router structure, layouts, nearby pages, reusable components, design tokens, global styles, breakpoints, forms, API clients, and fetching/state patterns.
+2. Locate the frontend package, scripts, lockfile/workspace setup, and environment configuration; inspect the App Router structure, layouts, nearby pages, reusable components, design tokens, global styles, breakpoints, forms, API/auth clients, and fetching/state patterns.
 3. Check existing loading, empty, error, unauthorized, and success states.
 4. Find the closest existing pattern and reuse or extend it before creating a parallel convention.
 
@@ -47,7 +47,9 @@ Read `references/data-fetching-and-api-integration.md`.
 
 ## API integration
 
-Reuse centralized HTTP/API configuration when present. Avoid scattered hard-coded service URLs, respect environment variables, and never expose server secrets through public client configuration. Type contracts when practical, handle failures explicitly, and remember that frontend validation does not replace backend validation.
+Reuse centralized HTTP/API configuration and the existing authentication client when present. Distinguish browser-reachable public API URLs from server-only internal URLs. Never import backend authentication configuration or secrets into a client bundle. Type contracts when practical, handle failures according to their existing format, and remember that frontend validation does not replace backend validation.
+
+For a separate API using cookie sessions, inspect browser credential settings, cookie/origin policy, and the project's SSR credential forwarding mechanism; server requests do not automatically inherit incoming session cookies. Preserve other authentication approaches when used. See `references/data-fetching-and-api-integration.md` for details.
 
 ## Forms
 
@@ -81,7 +83,9 @@ Avoid unnecessary Client Components, artificial re-renders, oversized client dep
 
 ## Testing and verification
 
-Use the project's existing tools. Run lint, typecheck, tests, and build when available. Validate in a browser when possible: relevant viewports, keyboard interaction, loading/error/empty states, console output, hydration warnings/errors, and reduced-motion behavior when applicable. Do not introduce a test framework solely for this skill.
+Use the owning package's existing tools and the user's explicit scope. Run applicable lint, typecheck, and build commands. If an automated suite applies, run it; a manifest test script or installed runner alone does not establish that test files exist. If the user excludes automated tests, perform applicable static checks and safe behavior verification, and report that no automated suite was run. Preserve existing CI gates and do not add test infrastructure solely for this skill.
+
+Validate in a browser when feasible: relevant viewports, keyboard interaction, loading/error/empty and session states, console output, hydration warnings/errors, and reduced-motion behavior when applicable. Use isolated environments and fictitious data/credentials. Report executed commands, results, and browser or environment limitations; static checks do not establish that interaction works.
 
 ## Quality gate
 
@@ -93,8 +97,8 @@ Before considering the frontend complete, verify:
 - relevant UI states are covered;
 - accessibility, keyboard, and responsive behavior work;
 - no service URL or secret is inappropriately hard-coded;
-- lint, typecheck, tests, and build pass when provided;
-- the browser has no relevant warning, error, or hydration issue.
+- applicable lint, typecheck, build, and automated checks pass according to the verification scope above, or their limitations are reported;
+- browser behavior and relevant warning, error, or hydration issues are checked when feasible, with any unverified behavior disclosed.
 
 ## Scope boundary
 
@@ -103,7 +107,7 @@ Use this skill for React/Next.js work using the App Router. For framework-free H
 ## References
 
 - `references/server-and-client-components.md` — boundaries, composition, hydration, and client-runtime requirements.
-- `references/data-fetching-and-api-integration.md` — fetching, API clients, caching, environment variables, errors, and duplicate requests.
+- `references/data-fetching-and-api-integration.md` — fetching, API/auth clients, public/internal URLs, cookie sessions and SSR forwarding, caching, contracts, and errors.
 - `references/forms-and-ui-states.md` — form behavior, validation, submission, errors, empty states, success, and focus.
 - `references/accessibility.md` — semantics, keyboard, focus, forms, dialogs, menus, ARIA, and motion.
 - `references/responsive-interface-design.md` — fluid layouts, navigation, forms, tables, overflow, long content, and touch behavior.

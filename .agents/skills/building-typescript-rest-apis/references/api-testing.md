@@ -2,6 +2,16 @@
 
 Test the contract a caller can observe. Vitest and Supertest are useful examples for Node/Express projects, but use the consuming repository's runner, app bootstrap, fixtures, and database helpers.
 
+## Choose verification for the request
+
+Inspect the user's explicit scope, repository instructions/CI gates, applicable commands, and actual test files. A test script or installed runner is not evidence that a suite exists. If automated tests are requested or an existing suite applies, follow its runner and helpers, run relevant tests and broader checks as appropriate, and extend behavior coverage when within scope.
+
+If the user explicitly excludes automated tests, run applicable lint, typecheck, and build commands, and check schema/migrations when the change affects them. Exercise affected HTTP and persistence behavior in an isolated environment with fictitious data where feasible: status/body, authorization failures, writable fields, and persisted effects. For session changes, include relevant alternate mutation paths and concurrent lifecycle behavior. Preserve existing CI gates and do not introduce test infrastructure solely because this reference lists testing techniques.
+
+Record scenarios, commands, actual results, and limitations. Manual HTTP exercises are not an automated suite. State when no suite was run, a command is unavailable, or sandbox/environment restrictions prevent a check; do not claim an unexecuted command passed. Static checks alone do not prove endpoint behavior.
+
+Use temporary/test environments and fictitious credentials for either verification mode. Never use production data or real user credentials, or reset/truncate a database without appropriate authorization and a confirmed disposable target.
+
 ## What to test
 
 For an endpoint, choose cases from the actual contract rather than mechanically duplicating the same matrix everywhere:
