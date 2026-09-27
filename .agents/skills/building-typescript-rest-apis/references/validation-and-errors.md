@@ -19,9 +19,17 @@ Be deliberate about coercion. Query and path values usually arrive as strings. C
 
 If the validation library can infer TypeScript types from schemas, prefer inference when it avoids maintaining the same contract twice. Separate domain types are still appropriate when validated transport input is transformed into a different internal concept.
 
+Prisma input types describe persistence operations; they do not validate an HTTP contract and may permit relation writes or fields the caller must not control. Define writable fields in the boundary schema, preserve existing request envelopes, and decide how extra fields are rejected or stripped according to the contract. Map validated input explicitly into persistence instead of spreading an arbitrary request body. Derive input types from the validated schema (for example, `z.infer`) when appropriate.
+
+## Configuration boundary
+
+An `.env` file supplies values; a configuration module loads, validates, and exports them. Inspect the actual API package's startup/configuration path and existing loader before adding another one. Validate required variables early enough to fail startup predictably. Diagnostics should identify invalid or missing variable names without printing secrets or connection strings. Keep server configuration out of public frontend bundles.
+
 ## Useful validation responses
 
 A client should be able to identify what it can fix. Prefer stable, structured validation errors if the project already has an error envelope, for example a machine-readable code plus field/path details. Avoid leaking raw library internals when they would couple clients unnecessarily to Zod or another validator.
+
+Library-owned endpoints may already expose a documented native error format. Preserve it when it is part of the application's contract, document differences from custom endpoints, and adapt consumers at their existing integration boundary. Do not add normalization solely to force every route into one envelope.
 
 Do not turn malformed input into an internal server error. Conversely, do not label unexpected programming/database failures as validation failures merely to return a `4xx` status.
 

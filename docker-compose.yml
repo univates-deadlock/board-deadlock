@@ -17,9 +17,14 @@ services:
 
   api:
     build: ./api
+    env_file:
+      - path: ./api/.env
+        required: false
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-techpro}:${POSTGRES_PASSWORD:-techpro}@db:5432/${POSTGRES_DB:-techpro}
+      BETTER_AUTH_URL: http://localhost:${API_PORT:-4000}
+      FE_BASE_URL: http://localhost:${FRONTEND_PORT:-3000}
     ports:
       - "127.0.0.1:${API_PORT:-4000}:4000"
     volumes:
