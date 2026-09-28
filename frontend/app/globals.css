@@ -1,26 +1,227 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Design tokens da TechPro
+   Portados de techpro-web-landing-page/css/variables.css para manter a mesma
+   identidade visual do site institucional dentro do sistema interno (React).
+   Valores literais vivem aqui; os componentes usam as classes semânticas.
+   ========================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta institucional — navy (fundos escuros), green (ação), blue (apoio) */
+  --tp-green-400: #1be398;
+  --tp-green-500: #2db884;
+  --tp-green-600: #23956a;
+
+  --tp-blue-400: #23c3f3;
+  --tp-blue-500: #0f8bff;
+  --tp-blue-900: #00325f;
+
+  --tp-navy-800: #162444;
+  --tp-navy-900: #0e1930;
+  --tp-navy-950: #0a1429;
+
+  /* Neutros */
+  --tp-neutral-50: #f8fafc;
+  --tp-neutral-100: #edf2f8;
+  --tp-neutral-200: #e2e8f0;
+  --tp-neutral-300: #d9d9d9;
+  --tp-neutral-500: #969696;
+  --tp-neutral-700: #4a5568;
+  --tp-neutral-900: #1a202c;
+
+  /* Cores semânticas do sistema interno */
+  --tp-primary: var(--tp-green-500);
+  --tp-primary-light: var(--tp-green-400);
+  --tp-primary-dark: var(--tp-green-600);
+
+  --tp-text-main: var(--tp-neutral-900);
+  --tp-text-body: var(--tp-neutral-700);
+  --tp-text-muted: var(--tp-neutral-500);
+
+  --tp-background: #ffffff;
+  --tp-background-muted: var(--tp-neutral-50);
+  --tp-border: var(--tp-neutral-300);
+  --tp-border-light: var(--tp-neutral-200);
+
+  /* Feedback — mesmo uso semântico nas telas internas */
+  --tp-danger: #c0392b;
+  --tp-danger-surface: #fdf1f0;
+  --tp-warning: #b26a00;
+  --tp-warning-surface: #fdf6e9;
+  --tp-success-surface: #eefaf4;
+
+  /* Gradiente da marca (mesmo do botão primário da landing) */
+  --tp-primary-gradient: linear-gradient(
+    90deg,
+    var(--tp-primary) 0%,
+    var(--tp-primary-light) 100%
+  );
+
+  /* Fundo do painel de login: navy com profundidade, ecoando o hero institucional */
+  --tp-login-gradient: linear-gradient(
+    135deg,
+    var(--tp-navy-950) 0%,
+    var(--tp-navy-900) 55%,
+    var(--tp-blue-900) 100%
+  );
+
+  /* Escala tipográfica, espaçamento e raios da landing */
+  --tp-radius-sm: 8px;
+  --tp-radius-md: 12px;
+  --tp-radius-lg: 16px;
+  --tp-radius-xl: 24px;
+
+  --tp-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --tp-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  --tp-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --tp-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ==========================================================================
+   Exposição dos tokens ao Tailwind 4
+   Permite utilitários como bg-tp-navy-900, text-tp-primary, rounded-tp-lg.
+   ========================================================================== */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-tp-green-400: var(--tp-green-400);
+  --color-tp-green-500: var(--tp-green-500);
+  --color-tp-green-600: var(--tp-green-600);
+  --color-tp-blue-400: var(--tp-blue-400);
+  --color-tp-blue-500: var(--tp-blue-500);
+  --color-tp-blue-900: var(--tp-blue-900);
+  --color-tp-navy-800: var(--tp-navy-800);
+  --color-tp-navy-900: var(--tp-navy-900);
+  --color-tp-navy-950: var(--tp-navy-950);
+  --color-tp-neutral-50: var(--tp-neutral-50);
+  --color-tp-neutral-100: var(--tp-neutral-100);
+  --color-tp-neutral-300: var(--tp-neutral-300);
+  --color-tp-neutral-500: var(--tp-neutral-500);
+  --color-tp-neutral-700: var(--tp-neutral-700);
+  --color-tp-neutral-900: var(--tp-neutral-900);
+
+  --color-tp-primary: var(--tp-primary);
+  --color-tp-text-main: var(--tp-text-main);
+  --color-tp-text-body: var(--tp-text-body);
+  --color-tp-text-muted: var(--tp-text-muted);
+  --color-tp-border: var(--tp-border);
+  --color-tp-border-light: var(--tp-border-light);
+  --color-tp-danger: var(--tp-danger);
+  --color-tp-warning: var(--tp-warning);
+
+  --font-sans: var(--font-rubik), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --radius-tp-sm: var(--tp-radius-sm);
+  --radius-tp-md: var(--tp-radius-md);
+  --radius-tp-lg: var(--tp-radius-lg);
+  --radius-tp-xl: var(--tp-radius-xl);
+
+  --shadow-tp-card: var(--tp-shadow-card);
+  --shadow-tp-lg: var(--tp-shadow-lg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  color: var(--tp-text-main);
+  background-color: var(--tp-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Garante que o conteúdo empurre o rodapé para baixo em telas curtas */
+main {
+  flex: 1;
+}
+
+/* Indicador de foco visível e consistente em todo o sistema */
+:focus-visible {
+  outline: 3px solid var(--tp-primary);
+  outline-offset: 2px;
+}
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   Botões (mesmas regras do .btn da landing, expostas como classes utilitárias)
+   ========================================================================== */
+
+.btn-tp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: var(--tp-radius-sm);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--tp-transition-fast),
+    box-shadow var(--tp-transition-fast),
+    background-color var(--tp-transition-fast),
+    filter var(--tp-transition-fast);
+}
+
+.btn-tp--primary {
+  background: var(--tp-primary-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--tp-primary) 35%, transparent);
+}
+
+.btn-tp--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--tp-primary) 50%, transparent);
+  filter: brightness(1.06);
+}
+
+.btn-tp--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--tp-primary) 30%, transparent);
+}
+
+/* Estado ocupado/indisponível mantém a razão visível (cursor) sem parecer inativo por erro */
+.btn-tp:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+/* Respeita a preferência do sistema por menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .btn-tp {
+    transition: none;
+  }
+
+  .btn-tp--primary:hover:not(:disabled) {
+    transform: none;
+  }
 }

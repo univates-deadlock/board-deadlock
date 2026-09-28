@@ -1,9 +1,27 @@
 # Frontend TechPro
 
-Next.js App Router, React, TypeScript e Tailwind. A página atual ainda é a inicial
-do Next.js; a página institucional e as telas da equipe devem ser implementadas
-pelos responsáveis conforme o Figma. Esta tarefa implementou a API de autenticação
-e usuários, sem criar novas telas.
+Next.js App Router, React, TypeScript e Tailwind. A tela de login e o shell
+interno estão implementados; as telas de orçamentos e de pendências entram quando
+a API expuser os endpoints correspondentes.
+
+## O que a tela de login cobre
+
+- **Estados tratados**: verificação da sessão, envio em andamento, sucesso e falha.
+- **Erros distintos**: credencial inválida (`401`) mostra uma mensagem única que não
+  revela se o email existe; usuário inativo (`403`) explica que é preciso procurar um
+  administrador; falha de servidor oferece nova tentativa.
+- **Duplo envio bloqueado**: o botão fica indisponível durante a requisição e o Enter
+  no formulário tem a mesma proteção.
+- **Acessibilidade**: campos com `label` visível, erro ligado ao campo por
+  `aria-describedby`, `aria-invalid` no estado inválido, mensagem em `role="alert"`,
+  foco devolvido ao primeiro campo após falha e navegação completa por teclado.
+- **Responsivo**: painel institucional a partir de 1024px (breakpoint `lg` do
+  Tailwind); abaixo disso, apenas o formulário com o logo. O sistema interno usa os
+  breakpoints padrão do Tailwind, e não os do site institucional (1280px, 890px,
+  600px), que valem para o projeto em HTML/CSS puro.
+
+A autorização de verdade continua no backend: esconder um botão na interface não é
+controle de acesso, e as rotas protegidas respondem `401`/`403` por conta própria.
 
 ## Rodar
 
@@ -61,9 +79,16 @@ Para erros de autenticação, leia `message`; para erros dos CRUDs, leia `error`
 
 ## Pastas e verificações
 
-- `app/`: páginas, layout e estilos do App Router.
-- `lib/`: integrações reutilizáveis, incluindo o cliente de autenticação.
+- `app/`: páginas, layout e estilos do App Router. `app/login/` é a tela de entrada.
+- `components/ui/`: primitivos reutilizáveis (`Button`, `Field`, `Alert`), com as
+  mesmas regras visuais do site institucional.
+- `lib/`: integrações reutilizáveis — `auth-client.ts` (Better Auth) e `api.ts`
+  (cliente HTTP com `credentials: include` e erros normalizados).
 - `public/`: arquivos estáticos.
+
+Os tokens de design (cores, tipografia, espaçamento, raios) ficam em
+`app/globals.css` e vêm do site institucional, para o sistema interno ter a mesma
+identidade visual. Prefira as variáveis do tema a valores fixos nos componentes.
 
 Server Components são o padrão; use Client Components nas interações que
 precisam de estado ou eventos. Leia [o contrato da API](../docs/api-usuarios.md)

@@ -17,9 +17,14 @@ cadastrar usuários com senha, consultar, editar, ativar e desativar. O login us
 email e senha; sessões são persistidas no PostgreSQL e transportadas por cookies.
 
 O schema já possui outras entidades do produto, mas seus CRUDs ainda precisam ser
-implementados pelos responsáveis. A página atual do frontend é a inicial do
-Next.js; a página institucional conforme o Figma e o segundo CRUD são outras
-tarefas da equipe. Não confunda o schema completo com endpoints já entregues.
+implementados pelos responsáveis. O frontend já tem a tela de login e o shell
+interno autenticado; as telas de orçamentos e de pendências, a página institucional
+conforme o Figma e o segundo CRUD são outras tarefas da equipe. Não confunda o
+schema completo com endpoints já entregues.
+
+O provisionamento da stack ainda exige passos manuais antes do login: `api/.env`
+com `BETTER_AUTH_SECRET` e a criação do primeiro administrador com `admin:create`.
+Sem essa conta não há como entrar, porque não existe cadastro público.
 
 Critérios informados para a Parcial 1:
 
