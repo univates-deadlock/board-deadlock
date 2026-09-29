@@ -21,15 +21,24 @@ import { authClient } from "@/lib/auth-client";
  * a interface — que é o objeto desta issue.
  */
 
-/** Mensagem única para credencial inválida: não revela se o e-mail existe. */
-const INVALID_CREDENTIALS_MESSAGE = "E-mail ou senha inválidos.";
+/**
+ * Mensagem exibida quando a API não devolve texto de erro (rede fora, resposta
+ * sem corpo). É o único caso em que a tela cria a própria mensagem.
+ */
+const API_UNAVAILABLE_MESSAGE = "Não foi possível falar com o servidor.";
 
-/** Mensagem para falha fora do controle do usuário (API fora do ar, erro 5xx). */
-const SERVER_ERROR_MESSAGE =
-  "Não foi possível entrar agora. Verifique sua conexão e tente novamente.";
+/** Mensagem para e-mail em formato inválido, antes de chamar a API. */
+const INVALID_EMAIL_FORMAT_MESSAGE = "Informe um e-mail válido.";
 
 /** Destino após o login bem-sucedido. */
 const POST_LOGIN_ROUTE = "/";
+
+/**
+ * Valida o formato do e-mail antes de enviar.
+ * Exige texto antes e depois do `@` e um domínio com ponto — o caso
+ * "usuario@dominio" (sem TLD) é recusado, que é o erro de digitação comum.
+ */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,6 +46,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* Referência para devolver o foco ao primeiro ponto de falha. */
@@ -57,15 +67,15 @@ export default function LoginPage() {
   }, [router]);
 
   /**
-   * Decide a mensagem conforme o resultado do Better Auth.
-   * A distinção importa: credencial errada pede correção do usuário,
-   * enquanto 5xx/rede pede nova tentativa mais tarde.
+   * Repassa a mensagem que a API devolveu.
+   *
+   * A API já responde igual para senha errada, e-mail inexistente e usuário
+   * inativo ("Invalid email or password"), então não há diferença a esconder
+   * aqui. Quando a resposta não traz texto (rede fora, corpo vazio), a tela usa
+   * uma mensagem própria para não deixar o usuário sem retorno.
    */
-  function resolveErrorMessage(status?: number, fallback?: string): string {
-    if (status === 401) return INVALID_CREDENTIALS_MESSAGE;
-    if (status === 403) return fallback ?? "Usuário inativo. Procure um administrador.";
-    if (status && status >= 500) return SERVER_ERROR_MESSAGE;
-    return fallback || SERVER_ERROR_MESSAGE;
+  function resolveErrorMessage(mensagem?: string): string {
+    return mensagem?.trim() || API_UNAVAILABLE_MESSAGE;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -75,16 +85,28 @@ export default function LoginPage() {
        mas o Enter no formulário precisa da mesma proteção. */
     if (isSubmitting) return;
 
+    const emailLimpo = email.trim().toLowerCase();
+
+    /* Formato conferido aqui para evitar uma ida à API com dado inválido.
+       A validação do servidor continua sendo a autoritativa. */
+    if (!EMAIL_REGEX.test(emailLimpo)) {
+      setErrorMessage("");
+      setEmailError(INVALID_EMAIL_FORMAT_MESSAGE);
+      emailRef.current?.focus();
+      return;
+    }
+
+    setEmailError("");
     setErrorMessage("");
     setIsSubmitting(true);
 
     const { error } = await authClient.signIn.email({
-      email: email.trim(),
+      email: emailLimpo,
       password,
     });
 
     if (error) {
-      setErrorMessage(resolveErrorMessage(error.status, error.message));
+      setErrorMessage(resolveErrorMessage(error.message));
       setIsSubmitting(false);
       /* Devolve o foco ao primeiro campo para quem navega por teclado. */
       emailRef.current?.focus();
@@ -188,7 +210,13 @@ export default function LoginPage() {
               required
               value={email}
               disabled={isSubmitting}
-              onChange={(event) => setEmail(event.target.value)}
+              error={emailError || undefined}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                /* Limpa o erro assim que o usuário corrige, para a mensagem
+                   não ficar presa depois da correção. */
+                if (emailError) setEmailError("");
+              }}
             />
 
             <Field
