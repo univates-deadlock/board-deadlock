@@ -1,13 +1,24 @@
+### Login para Autenticar
+# @name login
+POST http://localhost:4000/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "teste@exemplo.com",
+  "password": "Senha123!"
+}
+
 ### 1. Create a new client
 # Creates a new client entry in the database (Default active: true)
 POST http://localhost:4000/api/clients
 Content-Type: application/json
+Cookie: better-auth.session_token=meu-token-secreto-123
 
 {
   "type": "INDIVIDUAL",
   "name": "João da Silva",
   "whatsapp": "51999999999",
-  "location": "Encantado/RS",
+  "location": "Lajeado/RS",
   "email": "joao@email.com",
   "document": "12345678900",
   "notes": "Initial test client"
