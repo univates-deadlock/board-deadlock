@@ -71,13 +71,20 @@ export function LoginForm() {
     setErrorMessage("");
     setIsSubmitting(true);
 
-    const { error } = await authClient.signIn.email({
-      email: validation.data.email,
-      password: validation.data.password,
-    });
+    try {
+      const { error } = await authClient.signIn.email({
+        email: validation.data.email,
+        password: validation.data.password,
+      });
 
-    if (error) {
-      setErrorMessage(resolveErrorMessage(error.status));
+      if (error) {
+        setErrorMessage(resolveErrorMessage(error.status));
+        setIsSubmitting(false);
+        emailRef.current?.focus();
+        return;
+      }
+    } catch {
+      setErrorMessage(API_UNAVAILABLE_MESSAGE);
       setIsSubmitting(false);
       emailRef.current?.focus();
       return;
@@ -102,6 +109,7 @@ export function LoginForm() {
           name="email"
           autoComplete="username"
           inputMode="email"
+          maxLength={254}
           required
           value={email}
           disabled={isSubmitting}
