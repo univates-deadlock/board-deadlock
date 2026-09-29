@@ -7,8 +7,8 @@ type AlertProps = {
   children: ReactNode;
 };
 
-/* Cada tom tem superfície e texto próprios; a cor acompanha um rótulo textual,
-   para que o significado não dependa só da cor. */
+/* Each tone has its own surface and text colors, accompanied by a text label
+   so that meaning does not depend on color alone. */
 const TONE_CLASSES: Record<AlertTone, string> = {
   error: "bg-[var(--tp-danger-surface)] text-tp-danger border-tp-danger",
   warning: "bg-[var(--tp-warning-surface)] text-tp-warning border-tp-warning",
@@ -16,10 +16,10 @@ const TONE_CLASSES: Record<AlertTone, string> = {
 };
 
 /**
- * Mensagem de retorno de operação (falha de credencial, erro de servidor, sucesso).
+ * Operation feedback (invalid credentials, server errors, or success).
  *
- * Usa `role="alert"` para que tecnologias assistivas anunciem a mensagem assim
- * que ela aparecer, sem depender de o usuário perceber a mudança visual.
+ * Uses `role="alert"` so assistive technologies announce the message as soon
+ * as it appears, without relying on the user noticing a visual change.
  */
 export function Alert({ tone, children }: AlertProps) {
   return (
