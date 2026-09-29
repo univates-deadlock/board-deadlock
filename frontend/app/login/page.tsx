@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { authClient } from "@/lib/auth-client";
+import { loginSchema } from "@/lib/schemas";
 
 /**
  * Tela de login do sistema interno (issue #30, RF01/UC01).
@@ -27,18 +28,8 @@ import { authClient } from "@/lib/auth-client";
  */
 const API_UNAVAILABLE_MESSAGE = "Não foi possível falar com o servidor.";
 
-/** Mensagem para e-mail em formato inválido, antes de chamar a API. */
-const INVALID_EMAIL_FORMAT_MESSAGE = "Informe um e-mail válido.";
-
 /** Destino após o login bem-sucedido. */
 const POST_LOGIN_ROUTE = "/";
-
-/**
- * Valida o formato do e-mail antes de enviar.
- * Exige texto antes e depois do `@` e um domínio com ponto — o caso
- * "usuario@dominio" (sem TLD) é recusado, que é o erro de digitação comum.
- */
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,6 +38,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* Referência para devolver o foco ao primeiro ponto de falha. */
@@ -85,24 +77,29 @@ export default function LoginPage() {
        mas o Enter no formulário precisa da mesma proteção. */
     if (isSubmitting) return;
 
-    const emailLimpo = email.trim().toLowerCase();
+    /* Validação local com o mesmo schema da API: dá retorno imediato sem a ida
+       à rede. O servidor revalida — isto é conveniência, não autorização. */
+    const validacao = loginSchema.safeParse({ email, password });
 
-    /* Formato conferido aqui para evitar uma ida à API com dado inválido.
-       A validação do servidor continua sendo a autoritativa. */
-    if (!EMAIL_REGEX.test(emailLimpo)) {
+    if (!validacao.success) {
+      const erros = validacao.error.flatten().fieldErrors;
+      setEmailError(erros.email?.[0] ?? "");
+      setPasswordError(erros.password?.[0] ?? "");
       setErrorMessage("");
-      setEmailError(INVALID_EMAIL_FORMAT_MESSAGE);
+      /* Foca o primeiro campo com problema, na ordem visual do formulário. */
       emailRef.current?.focus();
       return;
     }
 
     setEmailError("");
+    setPasswordError("");
     setErrorMessage("");
     setIsSubmitting(true);
 
+    /* O schema já normalizou (trim + minúsculas); envia o valor validado. */
     const { error } = await authClient.signIn.email({
-      email: emailLimpo,
-      password,
+      email: validacao.data.email,
+      password: validacao.data.password,
     });
 
     if (error) {
@@ -132,7 +129,7 @@ export default function LoginPage() {
       >
         {/* Foto de uma central de monitoramento real como textura de fundo */}
         <Image
-          src="/central-monitoramento.png"
+          src="/central-monitoramento.webp"
           alt=""
           fill
           priority
@@ -228,7 +225,11 @@ export default function LoginPage() {
               required
               value={password}
               disabled={isSubmitting}
-              onChange={(event) => setPassword(event.target.value)}
+              error={passwordError || undefined}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (passwordError) setPasswordError("");
+              }}
             />
 
             <Button
