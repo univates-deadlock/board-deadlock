@@ -1,24 +1,24 @@
 /**
- * Schemas de validação do frontend, espelhando os da API.
+ * Frontend validation schemas, mirroring the API schemas.
  *
- * A validação aqui existe para dar retorno imediato ao usuário sem uma ida à
- * rede. O servidor continua sendo a autoridade: a API revalida tudo com os
- * mesmos schemas em `api/src/schemas/`.
+ * Validation gives users immediate feedback without a network request.
+ * The server remains authoritative: the API validates all inputs again
+ * using the schemas in `api/src/schemas/`.
  *
- * Por que Zod em vez de um regex solto: a API usa `z.email()`, que aplica as
- * regras de e-mail de verdade (posição de pontos, TLD alfabético, limites de
- * tamanho). Um regex permissivo aprovaria endereços que a API recusa, e o
- * usuário só descobriria o erro depois de esperar a requisição.
+ * Zod is used instead of a standalone regex because the API uses `z.email()`,
+ * which checks email rules such as dot placement, alphabetic TLDs, and length
+ * limits. A permissive regex could accept addresses the API rejects, leaving
+ * users waiting for a request before discovering the error.
  */
 import { z } from "zod";
 
 /**
- * Campo de e-mail.
+ * Email field.
  *
- * Mesma cadeia usada em `api/src/schemas/user.schema.ts`:
- * `trim().toLowerCase()` normaliza antes de validar, `max(254)` é o limite da
- * RFC e `z.email()` confere o formato. A mensagem é em português porque é a que
- * aparece na tela; a API devolve a mensagem dela para os casos que escaparem.
+ * Uses the same chain as `api/src/schemas/user.schema.ts`:
+ * `trim().toLowerCase()` normalizes before validation, `max(254)` enforces the
+ * RFC length limit, and `z.email()` checks the format. Messages are in Portuguese
+ * for display in the interface; the API supplies its own errors when needed.
  */
 export const emailSchema = z
   .string()
@@ -27,11 +27,11 @@ export const emailSchema = z
   .max(254, "E-mail muito longo.")
   .pipe(z.email("Informe um e-mail válido."));
 
-/** Formulário de login. */
+/** Login form. */
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Informe a senha."),
 });
 
-/** Tipo derivado do schema, para o formulário não divergir da validação. */
+/** Schema-derived type keeps the form aligned with validation. */
 export type LoginInput = z.infer<typeof loginSchema>;

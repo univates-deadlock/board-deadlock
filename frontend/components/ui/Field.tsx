@@ -3,20 +3,19 @@ import type { InputHTMLAttributes, Ref } from "react";
 type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
   id: string;
   label: string;
-  /** Mensagem de erro associada ao campo; quando presente, marca o campo como inválido. */
+  /** Error message associated with the field; marks the field as invalid when present. */
   error?: string;
-  /** Texto auxiliar exibido abaixo do campo quando não há erro. */
+  /** Helper text displayed below the field when there is no error. */
   hint?: string;
-  /** Permite à tela devolver o foco a este campo após uma falha de envio. */
+  /** Allows the page to restore focus to this field after a failed submission. */
   ref?: Ref<HTMLInputElement>;
 };
 
 /**
- * Campo de formulário com label visível, texto auxiliar e erro acessível.
+ * Form field with a visible label, helper text, and an accessible error.
  *
- * O erro é ligado ao input por `aria-describedby` (o texto real do erro) e o
- * estado inválido é exposto por `aria-invalid`, para que a leitura não dependa
- * apenas da cor da borda.
+ * `aria-describedby` connects the input to its error text, and `aria-invalid`
+ * exposes the invalid state so feedback does not rely on border color alone.
  */
 export function Field({
   id,

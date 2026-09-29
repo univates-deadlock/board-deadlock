@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* O indicador de desenvolvimento (o "N" no canto) sai da tela por padrão.
-     Erros de compilação e de runtime continuam aparecendo: a doc do Next 16
-     garante que só o selo informativo é escondido. */
+  /* Hide the development indicator (the "N" in the corner) by default.
+     Build and runtime errors remain visible; this only hides
+     the informational badge. */
   devIndicators: false,
 };
 

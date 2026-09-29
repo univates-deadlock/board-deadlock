@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Design tokens da TechPro
-   Portados de techpro-web-landing-page/css/variables.css para manter a mesma
-   identidade visual do site institucional dentro do sistema interno (React).
-   Valores literais vivem aqui; os componentes usam as classes semânticas.
+   TechPro design tokens
+   Ported from techpro-web-landing-page/css/variables.css to preserve the public
+   website's visual identity in the internal React application.
+   Literal values live here; components use semantic classes.
    ========================================================================== */
 
 :root {
-  /* Paleta institucional — navy (fundos escuros), green (ação), blue (apoio) */
+  /* Brand palette — navy (dark backgrounds), green (actions), blue (supporting elements) */
   --tp-green-400: #1be398;
   --tp-green-500: #2db884;
   --tp-green-600: #23956a;
@@ -21,7 +21,7 @@
   --tp-navy-900: #0e1930;
   --tp-navy-950: #0a1429;
 
-  /* Neutros */
+  /* Neutrals */
   --tp-neutral-50: #f8fafc;
   --tp-neutral-100: #edf2f8;
   --tp-neutral-200: #e2e8f0;
@@ -30,7 +30,7 @@
   --tp-neutral-700: #4a5568;
   --tp-neutral-900: #1a202c;
 
-  /* Cores semânticas do sistema interno */
+  /* Semantic colors for the internal application */
   --tp-primary: var(--tp-green-500);
   --tp-primary-light: var(--tp-green-400);
   --tp-primary-dark: var(--tp-green-600);
@@ -44,21 +44,21 @@
   --tp-border: var(--tp-neutral-300);
   --tp-border-light: var(--tp-neutral-200);
 
-  /* Feedback — mesmo uso semântico nas telas internas */
+  /* Feedback — consistent semantic usage across internal screens */
   --tp-danger: #c0392b;
   --tp-danger-surface: #fdf1f0;
   --tp-warning: #b26a00;
   --tp-warning-surface: #fdf6e9;
   --tp-success-surface: #eefaf4;
 
-  /* Gradiente da marca (mesmo do botão primário da landing) */
+  /* Brand gradient (shared with the landing page primary button) */
   --tp-primary-gradient: linear-gradient(
     90deg,
     var(--tp-primary) 0%,
     var(--tp-primary-light) 100%
   );
 
-  /* Fundo do painel de login: navy com profundidade, ecoando o hero institucional */
+  /* Login panel background: layered navy tones echo the public website hero */
   --tp-login-gradient: linear-gradient(
     135deg,
     var(--tp-navy-950) 0%,
@@ -66,7 +66,7 @@
     var(--tp-blue-900) 100%
   );
 
-  /* Escala tipográfica, espaçamento e raios da landing */
+  /* Typography scale, spacing, and border radii from the landing page */
   --tp-radius-sm: 8px;
   --tp-radius-md: 12px;
   --tp-radius-lg: 16px;
@@ -80,8 +80,8 @@
 }
 
 /* ==========================================================================
-   Exposição dos tokens ao Tailwind 4
-   Permite utilitários como bg-tp-navy-900, text-tp-primary, rounded-tp-lg.
+   Expose tokens to Tailwind 4
+   Enables utilities such as bg-tp-navy-900, text-tp-primary, and rounded-tp-lg.
    ========================================================================== */
 
 @theme inline {
@@ -148,12 +148,12 @@ body {
   flex-direction: column;
 }
 
-/* Garante que o conteúdo empurre o rodapé para baixo em telas curtas */
+/* Ensure content pushes the footer down on short screens */
 main {
   flex: 1;
 }
 
-/* Indicador de foco visível e consistente em todo o sistema */
+/* Consistent visible focus indicator throughout the application */
 :focus-visible {
   outline: 3px solid var(--tp-primary);
   outline-offset: 2px;
@@ -166,7 +166,7 @@ svg {
 }
 
 /* ==========================================================================
-   Botões (mesmas regras do .btn da landing, expostas como classes utilitárias)
+   Buttons (landing page .btn rules exposed as utility classes)
    ========================================================================== */
 
 .btn-tp {
@@ -206,7 +206,7 @@ svg {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--tp-primary) 30%, transparent);
 }
 
-/* Estado ocupado/indisponível mantém a razão visível (cursor) sem parecer inativo por erro */
+/* Busy/disabled state uses the cursor to indicate that the button is unavailable */
 .btn-tp:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -215,7 +215,7 @@ svg {
   filter: none;
 }
 
-/* Respeita a preferência do sistema por menos movimento */
+/* Respect the system preference for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .btn-tp {
     transition: none;

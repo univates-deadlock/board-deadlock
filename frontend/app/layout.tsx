@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 /**
- * Fonte institucional da TechPro (a mesma do site público).
- * `next/font` faz o download em build time e expõe a CSS variable,
- * evitando requisição externa em runtime e layout shift.
+ * TechPro brand font, shared with the public website.
+ * `next/font` downloads it at build time and exposes a CSS variable,
+ * avoiding external runtime requests and layout shifts.
  */
 const rubik = Rubik({
   variable: "--font-rubik",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    /* lang pt-BR: o sistema é interno e a interface é em português */
+    /* Match the document language to the Brazilian Portuguese interface. */
     <html lang="pt-BR" className={`${rubik.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
