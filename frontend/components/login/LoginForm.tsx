@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,15 @@ import { loginSchema } from "@/lib/schemas";
 
 const API_UNAVAILABLE_MESSAGE = "Não foi possível falar com o servidor.";
 const POST_LOGIN_ROUTE = "/";
+
+const emptySubscribe = () => () => {};
+function useIsHydrated() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+}
 
 function resolveErrorMessage(status?: number): string {
   switch (status) {
@@ -28,8 +37,14 @@ function resolveErrorMessage(status?: number): string {
 
 export function LoginForm() {
   const router = useRouter();
+  const isMounted = useIsHydrated();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    if (typeof window !== "undefined" && window.location.search) {
+      return new URLSearchParams(window.location.search).get("email") ?? "";
+    }
+    return "";
+  });
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -39,10 +54,17 @@ export function LoginForm() {
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     let active = true;
 
     authClient.getSession().then(({ data }) => {
-      if (active && data?.session) router.replace(POST_LOGIN_ROUTE);
+      if (active && data?.session) {
+        router.replace(POST_LOGIN_ROUTE);
+        router.refresh();
+      }
     });
 
     return () => {
@@ -105,7 +127,13 @@ export function LoginForm() {
     <div className="w-full max-w-md">
       <h1 className="mb-6 text-2xl font-bold text-tp-text-main">Acesse sua conta</h1>
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+      <form
+        action="javascript:void(0);"
+        method="POST"
+        onSubmit={handleSubmit}
+        noValidate
+        className="flex flex-col gap-5"
+      >
         {errorMessage ? <Alert tone="error">{errorMessage}</Alert> : null}
 
         <Field
@@ -147,8 +175,8 @@ export function LoginForm() {
           type="submit"
           variant="primary"
           className="w-full"
-          isLoading={isSubmitting}
-          loadingLabel="Entrando…"
+          isLoading={isSubmitting || !isMounted}
+          loadingLabel={!isMounted ? "Carregando…" : "Entrando…"}
         >
           Entrar
         </Button>
