@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Alert } from "@/components/ui/Alert";
@@ -26,17 +25,12 @@ function resolveErrorMessage(status?: number): string {
   }
 }
 
-export function LoginForm() {
-  const router = useRouter();
-
-  const [email, setEmail] = useState(() => {
-    if (typeof window !== "undefined" && window.location.search) {
-      return new URLSearchParams(window.location.search).get("email") ?? "";
-    }
-    return "";
-  });
+export function LoginForm({ initialErrorStatus }: { initialErrorStatus?: number }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState(
+    initialErrorStatus ? resolveErrorMessage(initialErrorStatus) : ""
+  );
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,23 +38,18 @@ export function LoginForm() {
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-
     let active = true;
 
     authClient.getSession().then(({ data }) => {
       if (active && data?.session) {
-        router.replace(POST_LOGIN_ROUTE);
-        router.refresh();
+        window.location.replace(POST_LOGIN_ROUTE);
       }
-    });
+    }).catch(() => {});
 
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -116,8 +105,7 @@ export function LoginForm() {
       return;
     }
 
-    router.replace(POST_LOGIN_ROUTE);
-    router.refresh();
+    window.location.replace(POST_LOGIN_ROUTE);
   }
 
   return (
@@ -125,8 +113,8 @@ export function LoginForm() {
       <h1 className="mb-6 text-2xl font-bold text-tp-text-main">Acesse sua conta</h1>
 
       <form
-        action="javascript:void(0);"
-        method="POST"
+        action="/login/submit"
+        method="post"
         onSubmit={handleSubmit}
         noValidate
         className="flex flex-col gap-5"
