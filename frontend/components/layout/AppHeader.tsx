@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { authClient } from "@/lib/auth-client";
 
@@ -19,19 +20,25 @@ export function AppHeader({
 }) {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
 
   async function handleSignOut() {
+    if (isSigningOut) return;
+    setSignOutError("");
     setIsSigningOut(true);
     try {
-      await authClient.signOut();
+      const { error } = await authClient.signOut();
+      if (error) throw new Error("Sign-out failed");
+      router.replace("/login");
+      router.refresh();
     } catch {
-      /* API unreachable — still redirect to login so the user is not stuck. */
+      setSignOutError("Não foi possível sair. Você ainda está conectado. Tente novamente.");
+      setIsSigningOut(false);
     }
-    router.replace("/login");
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-tp-border-light bg-white px-5 py-3 lg:px-8">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-tp-border-light bg-white px-5 py-3 lg:px-8">
       {/* Mobile menu button — hidden on desktop where the sidebar is always visible. */}
       <button
         type="button"
@@ -47,6 +54,8 @@ export function AppHeader({
       </button>
 
       <div className="hidden lg:block" />
+
+      {signOutError ? <Alert tone="error">{signOutError}</Alert> : null}
 
       <Button
         variant="secondary"

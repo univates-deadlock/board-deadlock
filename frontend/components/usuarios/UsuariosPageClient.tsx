@@ -36,20 +36,20 @@ const ROLE_LABELS: Record<string, string> = {
   TECHNICIAN: "Técnico",
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const EMPTY_FORM: UserFormData = { name: "", email: "", role: "", password: "" };
 
 /** Reads the API error body, falling back to a status-based message. */
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json();
-    if (body?.error) return body.error as string;
     /* Zod validation errors arrive as { error, fields: [{ path, message }] }. */
     if (Array.isArray(body?.fields) && body.fields.length > 0) {
       return body.fields
         .map((f: { path: string; message: string }) => f.message)
         .join(" ");
     }
+    if (typeof body?.error === "string") return body.error;
   } catch {
     /* Body was not JSON; fall through to the status-based message. */
   }
@@ -271,6 +271,7 @@ export function UsuariosPageClient() {
         <Button
           variant="primary"
           onClick={() => (showForm ? closeForm() : openCreateForm())}
+          disabled={isSubmitting}
         >
           {showForm ? "Cancelar" : "Novo usuário"}
         </Button>
@@ -292,6 +293,7 @@ export function UsuariosPageClient() {
         open={showForm}
         title={editingUserId ? "Editar usuário" : "Cadastrar usuário"}
         onClose={closeForm}
+        dismissible={!isSubmitting}
       >
         <form
           onSubmit={handleSubmit}
@@ -355,6 +357,8 @@ export function UsuariosPageClient() {
               <select
                 id="user-role"
                 required
+                aria-invalid={Boolean(fieldErrors.role)}
+                aria-describedby={fieldErrors.role ? "user-role-error" : undefined}
                 value={formData.role}
                 disabled={isSubmitting}
                 onChange={(e) => {
@@ -381,7 +385,7 @@ export function UsuariosPageClient() {
                 ))}
               </select>
               {fieldErrors.role ? (
-                <p className="text-sm text-tp-danger">{fieldErrors.role}</p>
+                <p id="user-role-error" className="text-sm text-tp-danger">{fieldErrors.role}</p>
               ) : null}
             </div>
             {editingUserId === null ? (
@@ -411,7 +415,7 @@ export function UsuariosPageClient() {
               <div className="flex flex-col gap-1.5">
                 <p className="text-sm font-semibold text-tp-text-main">Senha</p>
                 <p className="text-sm text-tp-text-muted">
-                  Não editável. Para trocar a senha, desative e recrie o usuário.
+                  A alteração de senha não está disponível nesta tela.
                 </p>
               </div>
             )}

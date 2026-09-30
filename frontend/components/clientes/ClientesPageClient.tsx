@@ -63,7 +63,7 @@ type ClientFormData = {
   notes: string;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 const TYPE_LABELS: Record<ClientType, string> = {
   INDIVIDUAL: "Pessoa Física",
@@ -112,13 +112,13 @@ function toPayload(form: ClientFormData) {
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json();
-    if (body?.error) return body.error as string;
     /* Zod validation errors arrive as { error, fields: [{ path, message }] }. */
     if (Array.isArray(body?.fields) && body.fields.length > 0) {
       return body.fields
         .map((f: { path: string; message: string }) => f.message)
         .join(" ");
     }
+    if (typeof body?.error === "string") return body.error;
   } catch {
     /* Body was not JSON; fall through to the status-based message. */
   }
@@ -335,10 +335,12 @@ export function ClientesPageClient() {
     }
   }
 
+  const searchTerm = search.trim().toLowerCase();
+  const documentTerm = onlyDigits(searchTerm);
   const filtered = clients.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.document ?? "").includes(onlyDigits(search)),
+    (client) =>
+      client.name.toLowerCase().includes(searchTerm) ||
+      (documentTerm.length > 0 && onlyDigits(client.document ?? "").includes(documentTerm)),
   );
 
   return (
@@ -353,6 +355,7 @@ export function ClientesPageClient() {
         <Button
           variant="primary"
           onClick={() => (showForm ? closeForm() : openCreateForm())}
+          disabled={isSubmitting}
         >
           {showForm ? "Cancelar" : "Novo cliente"}
         </Button>
@@ -374,6 +377,7 @@ export function ClientesPageClient() {
         open={showForm}
         title={editingId ? "Editar cliente" : "Cadastrar cliente"}
         onClose={closeForm}
+        dismissible={!isSubmitting}
       >
         <form
           onSubmit={handleSubmit}
