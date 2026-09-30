@@ -44,7 +44,8 @@ For server-side session checks, set `API_INTERNAL_URL` when the Next.js server
 cannot reach the browser-facing API address. Docker Compose already sets it to
 `http://api:4000`. Without it, the server uses `NEXT_PUBLIC_API_URL` and then
 `http://localhost:4000`. The browser must send the Better Auth session cookie to
-the frontend host as well; the local setup uses `localhost` for both ports.
+the frontend host as well; the local setup uses `localhost` for both ports (or the
+address configured via `APP_HOST` in Docker Compose).
 
 Nunca coloque secret, URL de banco ou senha em variáveis `NEXT_PUBLIC_`.
 
