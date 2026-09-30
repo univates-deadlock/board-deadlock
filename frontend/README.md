@@ -1,8 +1,8 @@
 # Frontend TechPro
 
-Next.js App Router, React, TypeScript e Tailwind. A tela de login e o shell
-interno estão implementados; as telas de orçamentos e de pendências entram quando
-a API expuser os endpoints correspondentes.
+Next.js App Router, React, TypeScript e Tailwind. Login, navegação autenticada e
+CRUDs de clientes e usuários estão implementados. Dashboard e páginas de
+orçamentos, serviços, garantias e revisões aguardam seus endpoints.
 
 ## O que a tela de login cobre
 
@@ -31,6 +31,8 @@ npm run dev --prefix frontend
 ```
 
 Abra `http://localhost:3000`. A API deve estar em execução para autenticação.
+`dev` e `build` usam Webpack: no ambiente Docker validado, Turbopack falhou ao
+resolver o import do Tailwind e retornou `500` na tela de login.
 O cliente existente em `lib/auth-client.ts` usa `NEXT_PUBLIC_API_URL`, com fallback
 `http://localhost:4000`. Configure a variável no ambiente ou em `.env.local`:
 
@@ -98,8 +100,9 @@ Para erros de autenticação, leia `message`; para erros dos CRUDs, leia `error`
 - `app/`: páginas, layout e estilos do App Router. `app/login/` é a tela de entrada.
 - `components/ui/`: primitivos reutilizáveis (`Button`, `Field`, `Alert`), com as
   mesmas regras visuais do site institucional.
-- `lib/`: integrações reutilizáveis — `auth-client.ts` (Better Auth) e `api.ts`
-  (cliente HTTP com `credentials: include` e erros normalizados).
+- `lib/`: `auth-client.ts` (Better Auth), `auth-server.ts` (verificação da sessão
+  no servidor), máscaras e schemas. Os CRUDs usam `fetch` com
+  `credentials: include` nos respectivos componentes.
 - `public/`: arquivos estáticos.
 
 Os tokens de design (cores, tipografia, espaçamento, raios) ficam em
