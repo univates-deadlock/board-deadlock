@@ -55,7 +55,14 @@ export function LoginForm() {
 
     if (isSubmitting) return;
 
-    const validation = loginSchema.safeParse({ email, password });
+    const formData = new FormData(event.currentTarget);
+    const currentEmail = (formData.get("email") as string) || email;
+    const currentPassword = (formData.get("password") as string) || password;
+
+    const validation = loginSchema.safeParse({
+      email: currentEmail,
+      password: currentPassword,
+    });
 
     if (!validation.success) {
       const errors = validation.error.flatten().fieldErrors;
@@ -142,7 +149,6 @@ export function LoginForm() {
           className="w-full"
           isLoading={isSubmitting}
           loadingLabel="Entrando…"
-          disabled={!email || !password}
         >
           Entrar
         </Button>
