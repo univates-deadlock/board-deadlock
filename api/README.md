@@ -108,6 +108,8 @@ nem sobrescreve usuários existentes. Para Docker, substitua o comando npm por:
 docker compose exec -e ADMIN_NAME -e ADMIN_EMAIL -e ADMIN_PASSWORD api npm run admin:create
 ```
 
+Caso prefira declarar as variáveis `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` no `api/.env`, execute apenas `docker compose exec api npm run admin:create` (e remova `ADMIN_PASSWORD` do arquivo após a criação).
+
 Use o email e a senha escolhidos para login. Usuários criados anteriormente sem
 conta `credential` não ganham senha automaticamente; requerem provisionamento
 antes de poderem fazer login. Não faça `migrate reset` para resolver esse caso.

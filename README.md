@@ -112,7 +112,7 @@ um comando que gera e grava o secret sem exibi-lo. O arquivo deve conter:
 São credenciais locais de desenvolvimento. O `.env` é ignorado pelo Git e não
 deve conter valores reais compartilhados em commits, slides ou prints.
 
-## Opção A — stack completa no Docker
+## Stack completa no Docker
 
 Após configurar `api/.env`:
 
@@ -134,7 +134,8 @@ administrador, abra outro terminal e siga
 | PostgreSQL | localhost:5432 |
 
 Dentro do Compose, a API usa `db:5432`; no host, a URL do banco usa `localhost`.
-As portas são publicadas em `127.0.0.1`. Dependências, cliente Prisma e cache do
+Por padrão, o banco permanece restrito a `127.0.0.1:5432`, enquanto o frontend e a
+API publicam em `0.0.0.0` nas portas 3000 e 4000. Dependências, cliente Prisma e cache do
 Next.js usam volumes próprios, evitando alterações de propriedade no host.
 
 ```bash
@@ -145,35 +146,10 @@ docker compose down
 
 `down` preserva o volume do banco. Não adicione `-v` se quiser manter seus dados.
 As variáveis `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`,
-`API_PORT` e `FRONTEND_PORT` permitem ajustar o Compose. Ao trocar portas/hosts,
-ajuste também as URLs do ambiente e a origem permitida.
-
-## Opção B — Node no host e banco no Docker
-
-```bash
-docker compose up -d db
-npm run db:validate --prefix api
-npm run db:generate --prefix api
-npm run db:migrate --prefix api
-```
-
-Crie o primeiro administrador seguindo o
-[guia da API](api/README.md#criar-o-primeiro-administrador). Depois, em terminais
-separados:
-
-```bash
-npm run dev --prefix api
-```
-
-```bash
-npm run dev --prefix frontend
-```
-
-O desenvolvimento do frontend usa Webpack, assim como o build, para evitar o erro
-de resolução do Tailwind observado com Turbopack no Docker.
-O cliente do frontend usa `NEXT_PUBLIC_API_URL`, com fallback para
-`http://localhost:4000`. Para outra URL, configure `frontend/.env.local` e reinicie
-o Next.js. Veja [frontend/README.md](frontend/README.md).
+`API_PORT`, `FRONTEND_PORT` e `APP_HOST` (além de `API_BIND_IP` e `FRONTEND_BIND_IP`)
+permitem ajustar o Compose. Ao rodar em servidor remoto, defina `APP_HOST=<ip_ou_host>`
+(por exemplo criando `.env` a partir de `.env.example`) para que CORS, Better Auth
+e a URL pública da API no frontend apontem automaticamente para o endereço de acesso.
 
 ## Como entender a implementação
 
