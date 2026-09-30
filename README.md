@@ -11,16 +11,21 @@ Projeto da disciplina de Laboratório de Programação para Internet da Univates
 
 ## Estado atual e Parcial 1
 
-Esta entrega implementa **autenticação/sessão e administração de usuários na API**.
+Esta entrega implementa **autenticação/sessão e CRUDs de usuários e clientes,
+com telas internas integradas à API**.
 O usuário possui perfil `ADMIN`, `PLANNING` ou `TECHNICIAN`. Administradores podem
 cadastrar usuários com senha, consultar, editar, ativar e desativar. O login usa
 email e senha; sessões são persistidas no PostgreSQL e transportadas por cookies.
 
-O schema já possui outras entidades do produto, mas seus CRUDs ainda precisam ser
-implementados pelos responsáveis. O frontend já tem a tela de login e o shell
-interno autenticado; as telas de orçamentos e de pendências, a página institucional
-conforme o Figma e o segundo CRUD são outras tarefas da equipe. Não confunda o
-schema completo com endpoints já entregues.
+Administradores gerenciam usuários; `ADMIN` e `PLANNING` gerenciam clientes.
+As telas permitem cadastrar, listar, editar, desativar e reativar registros.
+A busca de clientes por nome ou documento acontece na lista carregada no navegador.
+O frontend tem login e navegação interna autenticada. Dashboard, orçamentos,
+serviços, garantias e revisões ainda não têm operações: são páginas de apresentação
+ou de “em desenvolvimento”. A página institucional também permanece pendente.
+O schema inclui entidades futuras; isso não significa que seus endpoints existem.
+
+Veja o [roteiro e resultado da validação para demonstração](docs/validacao-demonstracao.md).
 
 O provisionamento da stack ainda exige passos manuais antes do login: `api/.env`
 com `BETTER_AUTH_SECRET` e a criação do primeiro administrador com `admin:create`.
@@ -164,6 +169,8 @@ npm run dev --prefix api
 npm run dev --prefix frontend
 ```
 
+O desenvolvimento do frontend usa Webpack, assim como o build, para evitar o erro
+de resolução do Tailwind observado com Turbopack no Docker.
 O cliente do frontend usa `NEXT_PUBLIC_API_URL`, com fallback para
 `http://localhost:4000`. Para outra URL, configure `frontend/.env.local` e reinicie
 o Next.js. Veja [frontend/README.md](frontend/README.md).
@@ -191,6 +198,7 @@ Leitura recomendada:
 
 1. [Guia da API](api/README.md): instalação, autenticação e arquitetura.
 2. [Contrato e demonstração](docs/api-usuarios.md): requests completos com curl.
+   [Contrato de clientes](docs/api-clientes.md): permissões e payloads do segundo CRUD.
 3. READMEs em `api/src/`: responsabilidade de cada camada e padrão para os colegas.
 4. [Prisma](api/prisma/README.md): modelos e migrations.
 5. [Requisitos](docs/documento-requisitos.md): produto esperado e regras.

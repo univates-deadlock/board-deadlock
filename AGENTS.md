@@ -4,7 +4,7 @@
 
 TechPro is an internal web app for managing the client → quote → service/visit workflow. Read `docs/documento-requisitos.md` for product scope and business rules, `README.md` for local setup, and `api/README.md` plus `docs/api-usuarios.md` for the implemented API contract.
 
-The API implements `GET /api/health`, email/password authentication and cookie sessions with Better Auth, and ADMIN-only user management at `/api/users`. User deletion is logical deactivation and revokes sessions. A local `admin:create` script provisions the first administrator. The Prisma schema includes business models and versioned migrations; model presence does not establish that other CRUD endpoints exist. The frontend is still the default Next.js page with an authentication client; the institutional page, login screens, and second CRUD are separate tasks.
+The API implements `GET /api/health`, email/password authentication and cookie sessions with Better Auth, ADMIN-only user management at `/api/users`, and client management for ADMIN/PLANNING at `/api/clients` (see `docs/api-clientes.md`). User deletion is logical deactivation and revokes sessions; client deletion is also logical. A local `admin:create` script provisions the first administrator. The frontend implements login, an authenticated shell, and both CRUD screens. Dashboard indicators, quotes, services, warranties, revisions, and the institutional page remain pending. The Prisma schema includes business models and versioned migrations; model presence does not establish that other CRUD endpoints exist.
 
 ## Repository
 
