@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { authClient } from "@/lib/auth-client";
 
@@ -37,6 +38,7 @@ export function HomePageClient() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -59,10 +61,23 @@ export function HomePageClient() {
   }, [router]);
 
   async function handleSignOut() {
+    setSignOutError("");
     setIsSigningOut(true);
-    await authClient.signOut();
-    /* replace prevents returning to the internal area with the browser Back button. */
-    router.replace("/login");
+
+    try {
+      const { error } = await authClient.signOut();
+      if (error) {
+        setSignOutError("Não foi possível sair. Você ainda está conectado. Tente novamente.");
+        setIsSigningOut(false);
+        return;
+      }
+
+      /* replace prevents returning to the internal area with the browser Back button. */
+      router.replace("/login");
+    } catch {
+      setSignOutError("Não foi possível sair. Você ainda está conectado. Tente novamente.");
+      setIsSigningOut(false);
+    }
   }
 
   /* Loading state: wait for a valid session before displaying
@@ -117,6 +132,11 @@ export function HomePageClient() {
           Content — the operational shell will be added in later deliveries
           ==================================================================== */}
       <section className="mx-auto w-full max-w-[1280px] flex-1 px-5 py-12 md:px-10">
+        {signOutError ? (
+          <div className="mb-6 max-w-2xl">
+            <Alert tone="error">{signOutError}</Alert>
+          </div>
+        ) : null}
         <p className="mb-2 text-sm font-medium uppercase tracking-[0.15em] text-tp-primary">
           Sistema Interno
         </p>
