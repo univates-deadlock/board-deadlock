@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 import { loginSchema } from "@/lib/schemas";
 
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   });
 
   const failure = (status: number) =>
-    NextResponse.redirect(new URL(`/login?error=${status}`, request.url), 303);
+    new Response(null, { status: 303, headers: { location: `/login?error=${status}` } });
 
   if (!credentials.success) return failure(400);
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const cookies = response.headers.getSetCookie();
   if (cookies.length === 0) return failure(503);
 
-  const redirect = NextResponse.redirect(new URL("/", request.url), 303);
+  const redirect = new Response(null, { status: 303, headers: { location: "/" } });
   for (const cookie of cookies) redirect.headers.append("set-cookie", cookie);
   return redirect;
 }
