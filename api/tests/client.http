@@ -1,54 +1,57 @@
-### Login para Autenticar
-# @name login
-POST http://localhost:4000/api/auth/sign-in/email
+# Manual examples. Sign in first as ADMIN or PLANNING and copy only the
+# better-auth.session_token name/value from Set-Cookie into the variable below.
+# Replace clientId with a UUID returned by POST /api/clients.
+@baseUrl = http://localhost:4000
+@cookie = better-auth.session_token=replace-with-session-token
+@clientId = replace-with-client-uuid
+
+### Sign in
+POST {{baseUrl}}/api/auth/sign-in/email
 Content-Type: application/json
 
 {
-  "email": "teste@exemplo.com",
-  "password": "Senha123!"
+  "email": "admin@example.com",
+  "password": "replace-with-local-password"
 }
 
-### 1. Create a new client
-# Creates a new client entry in the database (Default active: true)
-POST http://localhost:4000/api/clients
+### Create client
+POST {{baseUrl}}/api/clients
 Content-Type: application/json
-Cookie: better-auth.session_token=meu-token-secreto-123
+Cookie: {{cookie}}
 
 {
   "type": "INDIVIDUAL",
-  "name": "João da Silva",
+  "name": "Cliente Exemplo",
   "whatsapp": "51999999999",
   "location": "Lajeado/RS",
-  "email": "joao@email.com",
-  "document": "12345678900",
-  "notes": "Initial test client"
+  "email": "cliente@example.com"
 }
 
-### 2. List all clients
-# Fetches all client records ordered by creation date
-GET http://localhost:4000/api/clients
+### List clients
+GET {{baseUrl}}/api/clients
+Cookie: {{cookie}}
 
+### Get client
+GET {{baseUrl}}/api/clients/{{clientId}}
+Cookie: {{cookie}}
 
-
-### 3. Get client by ID
-# Fetch a specific client using the UUID returned from the POST request
-# Replace the UUID below with a valid ID from your database
-GET http://localhost:4000/api/clients/f097232b-78ab-45d9-8c6d-87f7be2cb38e
-
-
-### 4. Update a client
-# Partial update using Zod validation schema
-# Replace the UUID below with a valid ID
-PATCH http://localhost:4000/api/clients/f097232b-78ab-45d9-8c6d-87f7be2cb38e
+### Update client
+PATCH {{baseUrl}}/api/clients/{{clientId}}
 Content-Type: application/json
+Cookie: {{cookie}}
 
 {
-  "name": "João da Silva Updated"
+  "name": "Cliente Atualizado"
 }
 
-### 5. Deactivate a client (Logical soft delete)
-# Sets the 'active' property to false while maintaining historical data
-PATCH http://localhost:4000/api/clients/f097232b-78ab-45d9-8c6d-87f7be2cb38e/deactivate
-Content-Type: application/json
+### Deactivate client
+PATCH {{baseUrl}}/api/clients/{{clientId}}/deactivate
+Cookie: {{cookie}}
 
-{}
+### Activate client
+PATCH {{baseUrl}}/api/clients/{{clientId}}/activate
+Cookie: {{cookie}}
+
+### Delete logically (alternative to deactivate)
+DELETE {{baseUrl}}/api/clients/{{clientId}}
+Cookie: {{cookie}}

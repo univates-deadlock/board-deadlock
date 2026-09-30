@@ -16,10 +16,10 @@ const clientFields = {
     .trim()
     .toLowerCase()
     .max(100)
-    .pipe(z.email("Email inválido"))
+    .pipe(z.union([z.email("Email inválido"), z.literal("")]))
+    .transform((email) => email === "" ? null : email)
     .nullable()
-    .optional()
-    .or(z.literal("")),
+    .optional(),
 };
 
 export const clientIdSchema = z.string().trim().uuid("Identificador do cliente inválido");

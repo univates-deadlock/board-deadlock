@@ -1,9 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
+import type { UserRole } from "../../generated/prisma/client.js";
 
 /**
  * Middleware to validate if the authenticated user has one of the allowed roles.
  */
-export const requireRole = (...allowedRoles: string[]) => {
+export const requireRole = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const userRole = res.locals.user?.role;
 
