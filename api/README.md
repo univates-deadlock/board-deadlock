@@ -7,6 +7,7 @@ sessão usam Better Auth. Leia primeiro o [README principal](../README.md).
 
 - Login por email/senha, consulta da sessão e logout com cookie HTTP-only.
 - Administração de usuários com os perfis `ADMIN`, `PLANNING` e `TECHNICIAN`.
+- Cadastro, consulta, edição, ativação e inativação de clientes por `ADMIN` e `PLANNING`.
 - Cadastro com senha, listagem, consulta, edição, ativação e exclusão lógica.
 - Validação de payloads, permissões no servidor e erros HTTP padronizados.
 - Revogação das sessões na desativação e na alteração de email/perfil.
@@ -134,7 +135,8 @@ ativado também em desenvolvimento e usa memória por processo.
 
 ## Rotas e payloads
 
-Veja [o contrato completo e os exemplos curl](../docs/api-usuarios.md).
+Veja os contratos e exemplos em [usuários](../docs/api-usuarios.md) e
+[clientes](../docs/api-clientes.md).
 
 | Método | Caminho | Acesso |
 | --- | --- | --- |
@@ -146,11 +148,15 @@ Veja [o contrato completo e os exemplos curl](../docs/api-usuarios.md).
 | GET / PATCH / DELETE | `/api/users/:id` | administrador ativo |
 | PATCH | `/api/users/:id/activate` | administrador ativo |
 | PATCH | `/api/users/:id/deactivate` | administrador ativo |
+| GET / POST | `/api/clients` | administrador ou planejamento ativo |
+| GET / PATCH / DELETE | `/api/clients/:id` | administrador ou planejamento ativo |
+| PATCH | `/api/clients/:id/activate` | administrador ou planejamento ativo |
+| PATCH | `/api/clients/:id/deactivate` | administrador ou planejamento ativo |
 
-`DELETE` é exclusão lógica (`isActive=false`), mantendo referências dos registros
-de negócio. Um usuário inativo continua visível ao administrador e pode ser
-reativado. Não é permitido desativar a si mesmo, retirar o próprio perfil admin
-ou remover o último administrador ativo.
+`DELETE` é exclusão lógica. Em usuários, define `isActive=false`; em clientes,
+define `active=false`. Os registros continuam disponíveis para consulta e podem
+ser reativados. Não é permitido desativar a si mesmo, retirar o próprio perfil
+admin ou remover o último administrador ativo.
 
 ## Organização do código
 

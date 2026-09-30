@@ -1,0 +1,57 @@
+# Manual examples. Sign in first as ADMIN or PLANNING and copy only the
+# better-auth.session_token name/value from Set-Cookie into the variable below.
+# Replace clientId with a UUID returned by POST /api/clients.
+@baseUrl = http://localhost:4000
+@cookie = better-auth.session_token=replace-with-session-token
+@clientId = replace-with-client-uuid
+
+### Sign in
+POST {{baseUrl}}/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "replace-with-local-password"
+}
+
+### Create client
+POST {{baseUrl}}/api/clients
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "type": "INDIVIDUAL",
+  "name": "Cliente Exemplo",
+  "whatsapp": "51999999999",
+  "location": "Lajeado/RS",
+  "email": "cliente@example.com"
+}
+
+### List clients
+GET {{baseUrl}}/api/clients
+Cookie: {{cookie}}
+
+### Get client
+GET {{baseUrl}}/api/clients/{{clientId}}
+Cookie: {{cookie}}
+
+### Update client
+PATCH {{baseUrl}}/api/clients/{{clientId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "name": "Cliente Atualizado"
+}
+
+### Deactivate client
+PATCH {{baseUrl}}/api/clients/{{clientId}}/deactivate
+Cookie: {{cookie}}
+
+### Activate client
+PATCH {{baseUrl}}/api/clients/{{clientId}}/activate
+Cookie: {{cookie}}
+
+### Delete logically (alternative to deactivate)
+DELETE {{baseUrl}}/api/clients/{{clientId}}
+Cookie: {{cookie}}
