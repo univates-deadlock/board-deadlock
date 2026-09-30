@@ -3,11 +3,23 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "../lib/prisma.js";
 import { APIError } from "better-auth/api";
 import { env } from "../config/env.js";
-
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
-  trustedOrigins: [env.FE_BASE_URL],
+  trustedOrigins: async (request) => {
+    const origins = [env.FE_BASE_URL, "http://localhost:3000", "http://localhost:4000"];
+    if (process.env.APP_HOST) {
+      origins.push(`http://${process.env.APP_HOST}:3000`);
+      origins.push(`http://${process.env.APP_HOST}:4000`);
+    }
+    const origin = request?.headers?.get("origin") || request?.headers?.get("referer");
+    if (origin) {
+      try {
+        origins.push(new URL(origin).origin);
+      } catch {}
+    }
+    return origins;
+  },
   // All profile changes go through the validated, ADMIN-only CRUD.
   disabledPaths: ["/update-user", "/delete-user", "/change-email"],
   database: prismaAdapter(prisma, {

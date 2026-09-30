@@ -63,7 +63,7 @@ type ClientFormData = {
   notes: string;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const TYPE_LABELS: Record<ClientType, string> = {
   INDIVIDUAL: "Pessoa Física",

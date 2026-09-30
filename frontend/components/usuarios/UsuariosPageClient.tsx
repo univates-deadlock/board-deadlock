@@ -36,7 +36,7 @@ const ROLE_LABELS: Record<string, string> = {
   TECHNICIAN: "Técnico",
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 const EMPTY_FORM: UserFormData = { name: "", email: "", role: "", password: "" };
 
 /** Reads the API error body, falling back to a status-based message. */
