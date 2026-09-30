@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -11,15 +11,6 @@ import { loginSchema } from "@/lib/schemas";
 
 const API_UNAVAILABLE_MESSAGE = "Não foi possível falar com o servidor.";
 const POST_LOGIN_ROUTE = "/";
-
-const emptySubscribe = () => () => {};
-function useIsHydrated() {
-  return useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false
-  );
-}
 
 function resolveErrorMessage(status?: number): string {
   switch (status) {
@@ -37,7 +28,6 @@ function resolveErrorMessage(status?: number): string {
 
 export function LoginForm() {
   const router = useRouter();
-  const isMounted = useIsHydrated();
 
   const [email, setEmail] = useState(() => {
     if (typeof window !== "undefined" && window.location.search) {
@@ -101,13 +91,20 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await authClient.signIn.email({
-        email: validation.data.email,
-        password: validation.data.password,
-      });
+      const timeoutPromise = new Promise<{ error: { status?: number } }>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 10000)
+      );
 
-      if (error) {
-        setErrorMessage(resolveErrorMessage(error.status));
+      const result = await Promise.race([
+        authClient.signIn.email({
+          email: validation.data.email,
+          password: validation.data.password,
+        }),
+        timeoutPromise,
+      ]);
+
+      if (result.error) {
+        setErrorMessage(resolveErrorMessage(result.error.status));
         setIsSubmitting(false);
         emailRef.current?.focus();
         return;
@@ -175,8 +172,8 @@ export function LoginForm() {
           type="submit"
           variant="primary"
           className="w-full"
-          isLoading={isSubmitting || !isMounted}
-          loadingLabel={!isMounted ? "Carregando…" : "Entrando…"}
+          isLoading={isSubmitting}
+          loadingLabel="Entrando…"
         >
           Entrar
         </Button>
