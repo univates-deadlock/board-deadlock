@@ -1,0 +1,54 @@
+### Login para Autenticar
+# @name login
+POST http://localhost:4000/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "teste@exemplo.com",
+  "password": "Senha123!"
+}
+
+### 1. Create a new client
+# Creates a new client entry in the database (Default active: true)
+POST http://localhost:4000/api/clients
+Content-Type: application/json
+Cookie: better-auth.session_token=meu-token-secreto-123
+
+{
+  "type": "INDIVIDUAL",
+  "name": "João da Silva",
+  "whatsapp": "51999999999",
+  "location": "Lajeado/RS",
+  "email": "joao@email.com",
+  "document": "12345678900",
+  "notes": "Initial test client"
+}
+
+### 2. List all clients
+# Fetches all client records ordered by creation date
+GET http://localhost:4000/api/clients
+
+
+
+### 3. Get client by ID
+# Fetch a specific client using the UUID returned from the POST request
+# Replace the UUID below with a valid ID from your database
+GET http://localhost:4000/api/clients/f097232b-78ab-45d9-8c6d-87f7be2cb38e
+
+
+### 4. Update a client
+# Partial update using Zod validation schema
+# Replace the UUID below with a valid ID
+PATCH http://localhost:4000/api/clients/f097232b-78ab-45d9-8c6d-87f7be2cb38e
+Content-Type: application/json
+
+{
+  "name": "João da Silva Updated"
+}
+
+### 5. Deactivate a client (Logical soft delete)
+# Sets the 'active' property to false while maintaining historical data
+PATCH http://localhost:4000/api/clients/f097232b-78ab-45d9-8c6d-87f7be2cb38e/deactivate
+Content-Type: application/json
+
+{}
