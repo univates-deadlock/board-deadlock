@@ -24,7 +24,7 @@
 4. [Objetivos e Critérios de Sucesso](#4-objetivos-e-critérios-de-sucesso)
 5. [Escopo](#5-escopo)
    - [5.1 MVP obrigatório](#51-mvp-obrigatório)
-   - [5.2 Opcional / stretch do MVP](#52-opcional--stretch-do-mvp)
+   - [5.2 Opcional / meta adicional do MVP](#52-opcional--meta-adicional-do-mvp)
    - [5.3 Evoluções futuras — fora do MVP](#53-evoluções-futuras--fora-do-mvp)
 6. [Usuários e Atores](#6-usuários-e-atores)
 7. [Requisitos Funcionais](#7-requisitos-funcionais)
@@ -37,6 +37,7 @@
         - [UC03 - Criar e editar orçamento](#uc03---criar-e-editar-orçamento)
         - [UC04 - Registrar decisão do orçamento](#uc04---registrar-decisão-do-orçamento)
         - [UC05 - Criar e planejar serviço](#uc05---criar-e-planejar-serviço)
+        - [UC08 - Gerenciar garantias](#uc08---gerenciar-garantias)
         - [UC09 - Gerenciar revisões](#uc09---gerenciar-revisões)
 11. [Modelo de Banco de Dados](#11-modelo-de-banco-de-dados)
     - [11.1 Entidades principais](#111-entidades-principais)
@@ -111,7 +112,7 @@ Construir uma aplicação web exclusivamente interna para registrar e acompanhar
 - Revisões programadas e alertas internos. 
 - Dashboard operacional básico e busca/filtros.
 
-## 5.2 Opcional / stretch do MVP
+## 5.2 Opcional / meta adicional do MVP
 
 O módulo de acompanhamento manual de licitações é considerado opcional para fechamento do MVP. Deve ser implementado somente depois que o núcleo comercial, planejamento, vendas e pós-serviço estiver estável.
 
@@ -146,7 +147,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | :---- | :---- |
 | **RF01** | O sistema deve exigir autenticação para qualquer funcionalidade interna. |
 | **RF02** | O administrador deve poder criar, editar, ativar e desativar usuários internos. |
-| **RF03** | O sistema deve restringir funcionalidades conforme os perfis ADMIN, PLANNING e TECHNICIAN. |
+| **RF03** | O sistema deve restringir funcionalidades conforme os perfis `ADMINISTRADOR`, `PLANEJADOR` e `TÉCNICO`. |
 | **RF04** | Usuários autorizados devem poder cadastrar, editar, consultar e inativar clientes pessoa física ou jurídica. |
 | **RF05** | Cada cliente deve possuir ao menos um contato. |
 | **RF06** | Cada cliente deve possuir ao menos um local de atendimento. |
@@ -181,12 +182,12 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | **RNF03** | Segurança em trânsito | A implantação de produção deve utilizar HTTPS para todo acesso ao sistema. |
 | **RNF04** | Credenciais | Senhas devem ser armazenadas apenas como hash resistente a senha; nenhuma senha em texto puro pode ser registrada em log. |
 | **RNF05** | Desempenho | Em carga de até 20 usuários internos concorrentes, 95% das operações comuns de consulta/cadastro devem responder em até 2 segundos, desconsiderando upload de arquivos. |
-| **RNF06** | Integridade | criação/edição do orçamento, a decisão e a gravação dos itens devem usar transação quando houver mais de uma alteração dependente, evitando estado parcial.  |
+| **RNF06** | Integridade | A criação/edição do orçamento, a decisão e a gravação dos itens devem usar transação quando houver mais de uma alteração dependente, evitando estado parcial.  |
 | **RNF07** | Mensagens de erro | Falhas de validação devem identificar o campo ou regra violada e não devem resultar apenas em mensagem genérica. |
 | **RNF08** | Arquivos | Evidências de aprovação devem aceitar PDF, PNG, JPG/JPEG com no máximo 10 MB por arquivo; arquivos maiores ou de tipo não aceito devem ser recusados com explicação do limite. |
 | **RNF09** | Backup | O banco de produção deve possuir backup automático diário, com pelo menos 7 cópias diárias recuperáveis. |
 | **RNF10** | Responsividade | Fluxos essenciais devem funcionar sem rolagem horizontal indevida em larguras de 360 px, 768 px e 1280 px. |
-| **RNF11** | Compatibilidade | A aplicação deve ser validada na versão estável mais recentes de Chrome/Chromium e Firefox (opcional). |
+| **RNF11** | Compatibilidade | A aplicação deve ser validada na versão estável mais recente de Chrome/Chromium e Firefox (opcional). |
 | **RNF12** | Acessibilidade | Formulários e ações principais devem ser operados por teclado, possuir foco visível e rótulos associados aos campos. |
 | **RNF13** | Observabilidade | Erros de servidor devem ser registrados com data/hora e contexto técnico suficiente para diagnóstico, sem incluir senhas ou conteúdo sensível desnecessário. |
 | **RNF14** | Qualidade | O pipeline de integração deve falhar se lint, verificação de tipos ou testes automatizados obrigatórios falharem. |
@@ -328,11 +329,11 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 #### Regras de negócio
 
-- **RN-SRV-01:** vínculo com orçamento é opcional, exceto quando origem=QUOTE.
+- **RN-SRV-01:** vínculo com orçamento é opcional, exceto quando origem=`QUOTE` (orçamento).
 - **RN-SRV-02:** a OS oficial permanece no sistema atual; `external_os_number` é apenas referência.
 - **RN-SRV-03:** uma visita pode possuir vários técnicos e um técnico pode participar de várias visitas.
 
-### UC08 — Gerenciar garantias
+### UC08 - Gerenciar garantias
 
 | Campo | Definição |
 | :---- | :---- |
@@ -359,7 +360,7 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 #### Regras de negócio
 
 - **RN-GAR-01:** garantia da TechPro e garantia do fabricante são registros independentes.
-- **RN-GAR-02:** `ends_at` deve ser posterior ou igual a `starts_at`.
+- **RN-GAR-02:** `ends_at` (data de término) deve ser posterior ou igual a `starts_at` (data de início).
 - **RN-GAR-03:** alerta não envia comunicação externa no MVP.
 
 ### UC09 - Gerenciar revisões
