@@ -147,7 +147,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | :---- | :---- |
 | **RF01** | O sistema deve exigir autenticação para qualquer funcionalidade interna. |
 | **RF02** | O administrador deve poder criar, editar, ativar e desativar usuários internos. |
-| **RF03** | O sistema deve restringir funcionalidades conforme os perfis `ADMINISTRADOR`, `PLANEJADOR` e `TÉCNICO`. |
+| **RF03** | O sistema deve restringir funcionalidades conforme os perfis `ADMINISTRADOR`, `PLANEJADOR` e `TECNICO`. |
 | **RF04** | Usuários autorizados devem poder cadastrar, editar, consultar e inativar clientes pessoa física ou jurídica. |
 | **RF05** | Cada cliente deve possuir ao menos um contato. |
 | **RF06** | Cada cliente deve possuir ao menos um local de atendimento. |
