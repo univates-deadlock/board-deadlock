@@ -467,4 +467,4 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 | **MVP** | Menor versão do produto que resolve o núcleo do problema e pode ser validada com o cliente. |
 
 **Fase do projeto:** Sprint 1 — Autenticação, 2 CRUDs e Site Institucional.
-**Última atualização:** 04/10/2026
+**Última atualização:** 06/10/2026
