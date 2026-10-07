@@ -41,7 +41,8 @@
         - [UC09 - Gerenciar revisões](#uc09---gerenciar-revisões)
 11. [Modelo de Banco de Dados](#11-modelo-de-banco-de-dados)
     - [11.1 Entidades principais](#111-entidades-principais)
-12. [Decisões de Implementação Gerais](#12-decisões-de-implementação-gerais)
+12. [Decisões de Implementação](#12-decisões-de-implementação)
+   - [12.1 Decisões Gerais](#121-decisões-gerais)
 13. [Fora de Escopo e Itens Opcionais](#13-fora-de-escopo-e-itens-opcionais)
     - [13.1 Opcional para o MVP](#131-opcional-para-o-mvp)
     - [13.2 Fora do MVP](#132-fora-do-mvp)
@@ -110,14 +111,14 @@ Construir uma aplicação web exclusivamente interna para registrar e acompanhar
 - Registro gerencial de visita e conclusão, sem substituir a OS oficial.
 - Garantias de serviço e de fabricante separadas.
 - Revisões programadas e alertas internos. 
-- Dashboard operacional básico e busca/filtros.
+- Painel operacional básico e busca/filtros.
 
 ## 5.2 Opcional / meta adicional do MVP
 
 O módulo de acompanhamento manual de licitações é considerado opcional para fechamento do MVP. Deve ser implementado somente depois que o núcleo comercial, planejamento, vendas e pós-serviço estiver estável.
 
 - Cadastro manual de licitações com identificador, órgão/empresa, objeto, prazo, valor estimado, responsável, documentos e status.
-- Visões adicionais no dashboard para funil comercial e indicadores, desde que não comprometam requisitos obrigatórios.
+- Visões adicionais no painel operacional para funil comercial e indicadores, desde que não comprometam requisitos obrigatórios.
 
 ## 5.3 Evoluções futuras — fora do MVP
 
@@ -126,7 +127,8 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 - Busca automatizada de licitações.  
 - Integração com o software atual para sincronizar ordens de serviço, produtos e estoque.
 - Envio automático de notificações por WhatsApp ou e-mail. 
-- Portal externo para clientes acompanharem orçamento, serviço, garantia ou revisão. Substituição do controle de estoque ou da OS oficial.  
+- Portal externo para clientes acompanharem orçamento, serviço, garantia ou revisão.
+- Substituição do controle de estoque ou da OS oficial.  
 - Venda de produtos por técnicos, sem movimentação de estoque.
 
 ---
@@ -135,7 +137,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 
 | Ator | Contexto | Principais permissões |
 | :---- | :---- | :---- |
-| **Gestor / Administrador** | Responsável com atuação transversal entre comercial, planejamento e execução. | Acesso completo; usuários; clientes; orçamentos; planejamento; garantias; revisões; dashboard; licitações. |
+| **Gestor / Administrador** | Responsável com atuação transversal entre comercial, planejamento e execução. | Acesso completo; usuários; clientes; orçamentos; planejamento; garantias; revisões; painel operacional; licitações. |
 | **Orçamento / Planejamento** | Duas pessoas fixas responsáveis pela parte comercial e planejamento. | Clientes; orçamentos; aprovação; serviços; visitas; técnicos; OS externa; garantias; revisões; alertas; licitações. |
 | **Técnico** | Duas pessoas fixas de instalação e um técnico variável quando necessário. | Agenda e serviços atribuídos; dados necessários do cliente; informações da visita. |
 
@@ -147,29 +149,27 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | :---- | :---- |
 | **RF01** | O sistema deve exigir autenticação para qualquer funcionalidade interna. |
 | **RF02** | O administrador deve poder criar, editar, ativar e desativar usuários internos. |
-| **RF03** | O sistema deve restringir funcionalidades conforme os perfis `ADMINISTRADOR`, `PLANEJADOR` e `TECNICO`. |
+| **RF03** | O sistema deve restringir funcionalidades conforme os perfis de administrador, planejador e técnico. |
 | **RF04** | Usuários autorizados devem poder cadastrar, editar, consultar e inativar clientes pessoa física ou jurídica. |
-| **RF05** | Cada cliente deve possuir ao menos um contato. |
-| **RF06** | Cada cliente deve possuir ao menos um local de atendimento. |
-| **RF07** | Usuários de planejamento/admin devem poder criar um orçamento vinculado a um cliente. |
-| **RF08** | Cada orçamento deve aceitar vários itens dos tipos PRODUTO, SERVICO ou OUTRO, com descrição, quantidade, valor unitário e desconto. |
-| **RF09** | O sistema deve recalcular o valor total do orçamento a partir dos itens e descontos registrados. |
-| **RF10** | O orçamento pode ser editado apenas enquanto estiver em aberto; após aprovado, rejeitado ou expirado, seu conteúdo não pode ser alterado.   |
-| **RF11** | O sistema deve permitir registrar aprovação, rejeição ou expiração de um orçamento, com data, observação e evidência opcional. |
-| **RF12** | O sistema deve permitir criar serviço a partir de orçamento aprovado ou diretamente para um cliente. |
-| **RF13** | Serviços diretos devem registrar uma origem entre SUPORTE, MANUTENÇÃO, REVISÃO, GARANTIA ou OUTRO. |
-| **RF14** | Um serviço deve permitir armazenar referência opcional ao número da OS existente no software atual. |
-| **RF15** | Um serviço deve possuir uma ou mais visitas planejadas, com data/horário, status, local e observações. |
-| **RF16** | Cada visita deve permitir atribuir um ou mais técnicos. |
-| **RF17** | Técnicos devem visualizar sua agenda e os serviços/visitas aos quais estão atribuídos. |
-| **RF18** | Técnicos devem poder registrar início/fim real, status e observações gerenciais da visita, sem substituir os dados formais da OS externa. |
-| **RF19** | Um serviço deve suportar múltiplas garantias, distinguindo garantia de SERVIÇO e de FABRICANTE. |
-| **RF20** | Garantias devem registrar início, término, descrição e, para fabricante, fabricante e referência opcional ao produto. |
-| **RF21** | Um serviço deve suportar múltiplas revisões com data prevista e status PENDENTE, AGENDADA, REALIZADA ou CANCELADA. |
-| **RF22** | O sistema deve exibir alertas internos para revisões próximas/atrasadas e garantias próximas do vencimento. |
-| **RF23** | O dashboard deve apresentar ao menos orçamentos pendentes, serviços/visitas próximas, revisões pendentes e garantias próximas do vencimento. |
-| **RF24** | O sistema deve permitir busca e filtragem de clientes, orçamentos, serviços e agenda por informações relevantes e status. |
-| **RF25** | Quando uma aprovação possuir evidência, o sistema deve permitir anexar arquivo nos formatos e limites definidos nos RNFs. |
+| **RF05** | Usuários de planejamento e administradores devem poder criar um orçamento vinculado a um cliente. |
+| **RF06** | Cada orçamento deve aceitar vários itens dos tipos produto, serviço ou outro, com descrição, quantidade, valor unitário e desconto. |
+| **RF07** | O sistema deve recalcular o valor total do orçamento a partir dos itens e descontos registrados. |
+| **RF08** | O orçamento pode ser editado apenas enquanto estiver em aberto; após aprovado, rejeitado ou expirado, seu conteúdo não pode ser alterado.   |
+| **RF09** | O sistema deve permitir registrar aprovação, rejeição ou expiração de um orçamento, com data, observação e evidência opcional. |
+| **RF10** | O sistema deve permitir criar serviço a partir de orçamento aprovado ou diretamente para um cliente. |
+| **RF11** | Serviços diretos devem registrar uma origem entre SUPORTE, MANUTENÇÃO, REVISÃO, GARANTIA ou OUTRO. |
+| **RF12** | Um serviço deve permitir armazenar referência opcional ao número da OS existente no software atual. |
+| **RF13** | Um serviço deve possuir uma ou mais visitas planejadas, com data/horário, status, local e observações. |
+| **RF14** | Cada visita deve permitir atribuir um ou mais técnicos. |
+| **RF15** | Técnicos devem visualizar sua agenda e os serviços/visitas aos quais estão atribuídos. |
+| **RF16** | Técnicos devem poder registrar início/fim real, status e observações gerenciais da visita, sem substituir os dados formais da OS externa. |
+| **RF17** | Um serviço deve suportar múltiplas garantias, distinguindo garantia de SERVIÇO e de FABRICANTE. |
+| **RF18** | Garantias devem registrar início, término, descrição e, para fabricante, fabricante e referência opcional ao produto. |
+| **RF19** | Um serviço deve suportar múltiplas revisões com data prevista e status PENDENTE, AGENDADA, REALIZADA ou CANCELADA. |
+| **RF20** | O sistema deve exibir alertas internos para revisões próximas/atrasadas e garantias próximas do vencimento. |
+| **RF21** | O painel operacional deve apresentar ao menos orçamentos pendentes, serviços/visitas próximas, revisões pendentes e garantias próximas do vencimento. |
+| **RF22** | O sistema deve permitir busca e filtragem de clientes, orçamentos, serviços e agenda por informações relevantes e status. |
+| **RF23** | Quando uma aprovação possuir evidência, o sistema deve permitir anexar arquivo nos formatos e limites definidos nos RNFs. |
 
 ---
 
@@ -191,7 +191,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | **RNF12** | Acessibilidade | Formulários e ações principais devem ser operados por teclado, possuir foco visível e rótulos associados aos campos. |
 | **RNF13** | Observabilidade | Erros de servidor devem ser registrados com data/hora e contexto técnico suficiente para diagnóstico, sem incluir senhas ou conteúdo sensível desnecessário. |
 | **RNF14** | Qualidade | O pipeline de integração deve falhar se lint, verificação de tipos ou testes automatizados obrigatórios falharem. |
-| **RNF15** | Persistência temporal | Registros críticos devem manter created\_at/updated\_at e autoria quando aplicável, permitindo identificar quando e por quem a informação foi criada. |
+| **RNF15** | Persistência temporal | Registros críticos devem manter data de criação e atualização e autoria quando aplicável, permitindo identificar quando e por quem a informação foi criada. |
 
 ---
 
@@ -200,7 +200,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | ID | História |
 | :---- | :---- |
 | **US01** | Como gestor, quero administrar usuários e perfis para controlar quem pode acessar cada parte do sistema. |
-| **US02** | Como planejador, quero cadastrar clientes, contatos e locais para reutilizar essas informações em serviços. |
+| **US02** | Como planejador, quero cadastrar e manter os dados dos clientes para reutilizar essas informações durante o atendimento e planejamento dos serviços. |
 | **US03** | Como planejador, quero montar um orçamento com itens para formalizar uma proposta ao cliente. |
 | **US04** | Como planejador, quero registrar a decisão de um orçamento (aprovado, rejeitado ou expirado) e anexar uma evidência opcional, para ter o histórico do que foi combinado com o cliente.  |
 | **US05** | Como planejador, quero criar um serviço a partir de orçamento aprovado ou diretamente para não forçar todo atendimento a passar por orçamento. |
@@ -210,7 +210,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | **US09** | Como planejador, quero registrar garantias de serviço e fabricante separadamente para controlar vencimentos diferentes. |
 | **US10** | Como planejador, quero programar revisões futuras para que a empresa não perca o momento de retornar ao cliente. |
 | **US11** | Como usuário interno, quero ver alertas de revisão e garantia no sistema para priorizar pendências. |
-| **US12** | Como gestor, quero ver um dashboard do fluxo comercial e operacional para identificar o que precisa de atenção. |
+| **US12** | Como gestor, quero ver um painel operacional do fluxo comercial e operacional para identificar o que precisa de atenção. |
 | **US13** | Como planejador, quero vincular o número da OS externa a um serviço para cruzar o novo sistema com o software atual. |
 
 ---
@@ -219,7 +219,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 
 ## 10.1 Diagrama geral
 
-O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associação dos atores (Gestor/Admin, Orçamento/Planejamento e Técnico) com cada funcionalidade.
+O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associação dos atores (Gestor/Administrador, Orçamento/Planejamento e Técnico) com cada funcionalidade.
 
 ![Diagrama geral de casos de uso da TechPro](/assets/images/prd/diagrama-casos-de-uso.png)
 
@@ -228,16 +228,16 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 | ID | Caso de uso | Atores | RFs | Histórias |
 | :---- | :---- | :---- | :---- | :---- |
 | **UC01** | Autenticar-se | Todos | RF01, RF03 | US01 |
-| **UC02** | Gerenciar clientes, contatos e locais | Admin, Planejamento | RF04, RF06, | US02 |
-| **UC03** | Criar e editar orçamento | Admin, Planejamento | RF07, RF10  | US03 |
-| **UC04** | Registrar decisão do orçamento | Admin, Planejamento | RF11, RF25 | US04 |
-| **UC05** | Criar e planejar serviço | Admin, Planejamento | RF12, RF16  | US05, US06, US13  |
-| **UC06** | Consultar agenda / visita | Todos conforme permissão | RF15, RF17 | US07  |
-| **UC07** | Registrar execução gerencial da visita | Técnico, Admin | RF18 | US08 |
-| **UC08** | Gerenciar garantias | Admin, Planejamento | RF19, RF20 | US09 |
-| **UC09** | Gerenciar revisões | Admin, Planejamento | RF21 | US10 |
-| **UC10** | Visualizar alertas e dashboard | Todos conforme permissão | RF22, RF23 | US11, US12 |
-| **UC11** | Gerenciar usuários | Admin | RF02, RF03 | US01 |
+| **UC02** | Gerenciar clientes | Administrador, Planejamento | RF04 | US02 |
+| **UC03** | Criar e editar orçamento | Administrador, Planejamento | RF05-RF08  | US03 |
+| **UC04** | Registrar decisão do orçamento | Administrador, Planejamento | RF09, RF23 | US04 |
+| **UC05** | Criar e planejar serviço | Administrador, Planejamento | RF10-RF14  | US05, US06, US13  |
+| **UC06** | Consultar agenda / visita | Todos conforme permissão | RF13, RF15 | US07  |
+| **UC07** | Registrar execução gerencial da visita | Técnico, Administrador | RF16 | US08 |
+| **UC08** | Gerenciar garantias | Administrador, Planejamento | RF17, RF18 | US09 |
+| **UC09** | Gerenciar revisões | Administrador, Planejamento | RF19 | US10 |
+| **UC10** | Visualizar alertas e painel operacional | Todos conforme permissão | RF20, RF21 | US11, US12 |
+| **UC11** | Gerenciar usuários | Administrador | RF02, RF03 | US01 |
 
 ## 10.3 Casos de uso detalhados com regras de negócio
 
@@ -245,11 +245,11 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 | Campo | Definição |
 | :---- | :---- |
-| **Atores** | Gestor/Admin; Orçamento/Planejamento |
+| **Atores** | Gestor/Administrador; Orçamento/Planejamento |
 | **Pré-condições** | Usuário autenticado e cliente existente. |
 | **Gatilho** | Usuário inicia novo orçamento ou alteração de proposta existente. |
 | **Pós-condições** | Os orçamentos ficam disponíveis no histórico do cliente. |
-| **Rastreabilidade** | RF07-RF10; US03 |
+| **Rastreabilidade** | RF05-RF08; US03 |
 
 #### Fluxo principal
 
@@ -267,20 +267,20 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 #### Regras de negócio
 
-- **RN-ORC-01:** id é único dentro de cada orçamento.  
-* **RN-ORC-02:** um orçamento enviado e decidido é imutável quanto a seus itens e valores.  
-* **RN-ORC-03:** o total do orçamento é derivado de itens/descontos e não é digitado livremente.  
-* **RN-ORC-04:** cada item deve ser classificado como PRODUTO, SERVICO ou OUTRO.
+- **RN-ORC-01:** o ID é único dentro de cada orçamento.  
+- **RN-ORC-02:** um orçamento enviado e decidido é imutável quanto a seus itens e valores.  
+- **RN-ORC-03:** o total do orçamento é derivado de itens/descontos e não é digitado livremente.  
+- **RN-ORC-04:** cada item deve ser classificado como produto, serviço ou outro.
 
 ### UC04 - Registrar decisão do orçamento
 
 | Campo | Definição |
 | :---- | :---- |
-| **Atores** | Gestor/Admin; Orçamento/Planejamento |
+| **Atores** | Gestor/Administrador; Orçamento/Planejamento |
 | **Pré-condições** | Existe um orçamento enviado e o cliente comunicou uma decisão. |
 | **Gatilho** | Usuário registra aprovação, rejeição ou expiração. |
 | **Pós-condições** | A decisão fica vinculada ao orçamento e registrada no histórico. |
-| **Rastreabilidade** | RF11, RF25; RNF08; US04 |
+| **Rastreabilidade** | RF09, RF23; RNF08; US04 |
 
 #### Fluxo principal
 
@@ -306,11 +306,11 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 | Campo | Definição |
 | :---- | :---- |
-| **Atores** | Gestor/Admin; Orçamento/Planejamento |
-| **Pré-condições** | Cliente existente; para origem ORCAMENTO, existe orçamento aprovado. |
+| **Atores** | Gestor/Administrador; Orçamento/Planejamento |
+| **Pré-condições** | Cliente existente; para origem orçamentária, existe orçamento aprovado. |
 | **Gatilho** | Usuário precisa planejar uma execução. |
 | **Pós-condições** | Serviço e visitas ficam visíveis na agenda dos técnicos atribuídos. |
-| **Rastreabilidade** | RF12-RF16; US05-US06, US13 |
+| **Rastreabilidade** | RF10-RF14; US05-US06, US13 |
 
 #### Fluxo principal
 
@@ -329,24 +329,24 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 #### Regras de negócio
 
-- **RN-SRV-01:** vínculo com orçamento é opcional, exceto quando origem=`QUOTE` (orçamento).
-- **RN-SRV-02:** a OS oficial permanece no sistema atual; `external_os_number` é apenas referência.
+- **RN-SRV-01:** vínculo com orçamento é opcional, exceto quando origem for orçamento.
+- **RN-SRV-02:** a OS oficial permanece no sistema atual; O número da OS externa é apenas referência.
 - **RN-SRV-03:** uma visita pode possuir vários técnicos e um técnico pode participar de várias visitas.
 
 ### UC08 - Gerenciar garantias
 
 | Campo | Definição |
 | :---- | :---- |
-| **Atores** | Gestor/Admin; Orçamento/Planejamento |
+| **Atores** | Gestor/Administrador; Orçamento/Planejamento |
 | **Pré-condições** | Existe serviço registrado. |
 | **Gatilho** | Usuário cadastra garantia após conclusão/entrega. |
-| **Pós-condições** | Garantia fica vinculada ao serviço e monitorada pelo painel de alertas. |
-| **Rastreabilidade** | RF19-RF20, RF22; US09, US11 |
+| **Pós-condições** | Garantia fica vinculada ao serviço e monitorada pelo painel operacional de alertas. |
+| **Rastreabilidade** | RF17-RF18, RF20; US09, US11 |
 
 #### Fluxo principal
 
 1. Selecionar o serviço.
-2. Escolher tipo `SERVICO` ou `FABRICANTE`.
+2. Escolher tipo entre serviço e fabricante.
 3. Informar período de vigência.
 4. Para fabricante, informar quando disponível fabricante e referência do produto.
 5. Salvar.
@@ -360,26 +360,26 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 #### Regras de negócio
 
 - **RN-GAR-01:** garantia da TechPro e garantia do fabricante são registros independentes.
-- **RN-GAR-02:** `ends_at` (data de término) deve ser posterior ou igual a `starts_at` (data de início).
+- **RN-GAR-02:** A data de término deve ser posterior ou igual à data de início.
 - **RN-GAR-03:** alerta não envia comunicação externa no MVP.
 
 ### UC09 - Gerenciar revisões
 
 | Campo | Definição |
 | :---- | :---- |
-| **Atores** | Gestor/Admin; Orçamento/Planejamento |
+| **Atores** | Gestor/Administrador; Orçamento/Planejamento |
 | **Pré-condições** | Existe serviço registrado. |
 | **Gatilho** | Empresa deseja programar retorno/revisão. |
 | **Pós-condições** | Revisões futuras ficam visíveis em alertas e no histórico do serviço. |
-| **Rastreabilidade** | RF21-RF22; US10-US11 |
+| **Rastreabilidade** | RF19-RF20; US10-US11 |
 
 #### Fluxo principal
 
 1. Selecionar serviço.
 2. Cadastrar uma ou mais datas previstas de revisão.
-3. Manter status inicial `PENDENTE`.
-4. Ao combinar atendimento, alterar para `AGENDADA` e opcionalmente associar uma visita.
-5. Após atendimento, marcar `REALIZADA`; se não for mais necessária, `CANCELADA`.
+3. Manter status inicial como pendente.
+4. Ao combinar atendimento, alterar para status de agendamento e opcionalmente associar uma visita.
+5. Após atendimento, marcar como realizada; se não for mais necessária, cancelada.
 
 #### Fluxos alternativos / exceções
 
@@ -387,7 +387,7 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 #### Regras de negócio
 
-- **RN-REV-01:** status válidos são `PENDENTE`, `AGENDADA`, `REALIZADA` e `CANCELADA`.
+- **RN-REV-01:** status válidos são pendente, agendada, realizada e cancelada.
 - **RN-REV-02:** serviço pode possuir várias revisões futuras.
 - **RN-REV-03:** comunicação automática por WhatsApp/e-mail está fora do MVP.
 
@@ -403,14 +403,14 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 
 | Entidade | Responsabilidade |
 | :---- | :---- |
-| **USER** | Usuários internos e papel de acesso. |
-| **CLIENT** | Cliente pessoa física ou jurídica. |
-| **QUOTE** | Negociação/orçamento feita para um cliente. |
-| **QUOTE\_ITEM** | Itens de cada orçamento. |
-| **SERVICE** | Planejamento macro do atendimento/serviço. |
-| **SERVICE\_VISIT** | Idas/agendamentos vinculados ao serviço. |
-| **VISIT\_TECHNICIAN** | Relação N:N entre visita e técnico. |
-| **WARRANTY** | Garantias de serviço ou fabricante. |
+| **Usuário (USER)** | Usuários internos e papel de acesso. |
+| **Cliente (CLIENT)** | Cliente pessoa física ou jurídica. |
+| **Orçamento (QUOTE)** | Negociação/orçamento feita para um cliente. |
+| **Item de orçamento (QUOTE_ITEM)** | Itens de cada orçamento. |
+| **Serviço (SERVICE)** | Planejamento macro do atendimento/serviço. |
+| **Visita de serviço (SERVICE_VISIT)** | Idas/agendamentos vinculados ao serviço. |
+| **Técnico da visita (VISIT_TECHNICIAN)** | Relação N:N entre visita e técnico. |
+| **Garantia (WARRANTY)** | Garantias de serviço ou fabricante. |
 
 ---
 
@@ -426,7 +426,7 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 | **Persistência** | PostgreSQL como banco relacional. |
 | **ORM** | Prisma para schema, migrations e acesso tipado ao banco. |
 | **Validação** | Zod para validar payloads/DTOs nos limites da API. |
-| **Autenticação** | Autenticação interna baseada em credenciais; JWT/sessão conforme implementação final, sempre com autorização validada no backend. |
+| **Autenticação** | Autenticação interna baseada em credenciais utilizando Better Auth para autenticação e gerenciamento de sessão dos usuários internos, com autorização das operações validada no backend. |
 | **Segurança HTTP** | Helmet, CORS restritivo e rate limiting conforme o ambiente de produção. |
 | **Execução local** | Docker Compose como forma oficial de subir dependências e ambiente de desenvolvimento. |
 | **Arquivos** | Evidências devem ser armazenadas fora das tabelas binárias principais; o banco guarda metadados e referência do arquivo. |
@@ -439,7 +439,7 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 ## 13.1 Opcional para o MVP
 
 - Acompanhamento manual de licitações.
-- Indicadores adicionais no dashboard além do conjunto mínimo definido em RF23.
+- Indicadores adicionais no painel operacional além do conjunto mínimo definido em RF21.
 
 ## 13.2 Fora do MVP
 
@@ -449,6 +449,7 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 - Substituir o sistema atual de estoque/OS.  
 - Enviar mensagens automáticas por WhatsApp/e-mail.  
 - Criar portal/login para clientes externos.
+- Venda de produtos por técnicos, sem movimentação de estoque.
 
 ---
 
@@ -466,5 +467,5 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 | **Licitação** | Processo acompanhado manualmente no módulo opcional do MVP. |
 | **MVP** | Menor versão do produto que resolve o núcleo do problema e pode ser validada com o cliente. |
 
-**Fase do projeto:** Sprint 1 — Autenticação, 2 CRUDs e Site Institucional.
+**Fase do projeto:** Sprint 2 — Desenvolvimento Intensivo do Sistema.
 **Última atualização:** 06/10/2026
