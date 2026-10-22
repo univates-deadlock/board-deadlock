@@ -11,7 +11,7 @@ import {
 import * as quoteService from "../services/quote.service.js";
 import { AppError } from "../utils/AppError.js";
 
-// O middleware requireActiveUser guarda o usuário autenticado em res.locals.user
+// The requireActiveUser middleware stores the authenticated user in res.locals.user.
 const getAuthenticatedUserId = (res: Response): string => {
   const user = res.locals.user as { id?: string } | undefined;
 
@@ -51,7 +51,7 @@ export const updateQuote = async (req: Request, res: Response) => {
   return res.json(quote);
 };
 
-// 5) delete (só rascunho)
+// 5) Delete (draft only)
 export const deleteQuote = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
   await quoteService.deleteQuote(id);

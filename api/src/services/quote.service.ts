@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { MAX_QUOTE_ITEMS } from "../schemas/quote.schema.js";
 import type {
   CreateQuoteInput,
   CreateQuoteItemInput,
@@ -9,7 +10,7 @@ import type {
   UpdateQuoteItemInput,
 } from "../schemas/quote.schema.js";
 import { AppError } from "../utils/AppError.js";
-import { calcItemSubtotal, calcQuoteTotals, toDecimal } from "./quote.calc.js";
+import { calcItemSubtotal, calcQuoteTotals, toDecimal } from "./quote.calculations.js";
 
 // 1) ============= Selects =============
 export const quoteItemSelect = {
@@ -53,7 +54,7 @@ export const quoteDetailSelect = {
   items: { select: quoteItemSelect, orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
 } satisfies Prisma.QuoteSelect;
 
-// 2) ============= Helpers internos =============
+// 2) ============= Internal helpers =============
 // "Open" quote = can be edited (decision not yet recorded)
 const isOpen = (status: QuoteStatusValue) => status === "DRAFT" || status === "SENT";
 
@@ -72,8 +73,12 @@ const buildItemData = (input: CreateQuoteItemInput) => {
   };
 };
 
-// Fetches the quote and ensures it exists and can still be modified
-const getOpenQuoteOrThrow = async (tx: Prisma.TransactionClient, id: string) => {
+// Locks the quote and ensures it exists.
+const getQuoteForUpdateOrThrow = async (tx: Prisma.TransactionClient, id: string) => {
+  // Prisma has no row-lock API. Lock the parent before reading state or editing items
+  // so concurrent mutations of this quote use the latest status, discount, and items.
+  await tx.$queryRaw`SELECT "id" FROM "quote" WHERE "id" = ${id}::uuid FOR UPDATE`;
+
   const quote = await tx.quote.findUnique({
     where: { id },
     select: { id: true, status: true, discount: true },
@@ -82,6 +87,12 @@ const getOpenQuoteOrThrow = async (tx: Prisma.TransactionClient, id: string) => 
   if (!quote) {
     throw new AppError("Orçamento não encontrado", 404);
   }
+
+  return quote;
+};
+
+const getOpenQuoteOrThrow = async (tx: Prisma.TransactionClient, id: string) => {
+  const quote = await getQuoteForUpdateOrThrow(tx, id);
 
   if (!isOpen(quote.status)) {
     throw new AppError("Orçamento com decisão registrada não pode ser alterado", 409);
@@ -116,7 +127,7 @@ const recalculateQuote = async (
 const findQuoteDetail = async (tx: Prisma.TransactionClient, id: string) =>
   tx.quote.findUniqueOrThrow({ where: { id }, select: quoteDetailSelect });
 
-// 3) ============= List quotes (filtros opcionais) =============
+// 3) ============= List quotes (optional filters) =============
 export const getAllQuotes = async (filters: ListQuotesQuery) =>
   prisma.quote.findMany({
     where: {
@@ -127,7 +138,7 @@ export const getAllQuotes = async (filters: ListQuotesQuery) =>
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
   });
 
-// 4) ============= Search quote by ID (com itens) =============
+// 4) ============= Search quote by ID (with items) =============
 export const getQuoteById = async (id: string) => {
   const quote = await prisma.quote.findUnique({ where: { id }, select: quoteDetailSelect });
 
@@ -138,7 +149,7 @@ export const getQuoteById = async (id: string) => {
   return quote;
 };
 
-// 5) ============= Create quote (with itens) =============
+// 5) ============= Create quote (with items) =============
 export const createQuote = async (data: CreateQuoteInput, userId: string) => {
   const client = await prisma.client.findUnique({
     where: { id: data.clientId },
@@ -175,7 +186,7 @@ export const createQuote = async (data: CreateQuoteInput, userId: string) => {
   });
 };
 
-// 6) ============= Update quote (notes / desconto geral) =============
+// 6) ============= Update quote (notes / overall discount) =============
 export const updateQuote = async (id: string, data: UpdateQuoteInput) =>
   prisma.$transaction(async (tx) => {
     const quote = await getOpenQuoteOrThrow(tx, id);
@@ -192,25 +203,27 @@ export const updateQuote = async (id: string, data: UpdateQuoteInput) =>
   });
 
 // 7) ============= Delete quote =============
-export const deleteQuote = async (id: string) => {
-  const quote = await prisma.quote.findUnique({ where: { id }, select: { id: true, status: true } });
+export const deleteQuote = async (id: string) =>
+  prisma.$transaction(async (tx) => {
+    const quote = await getQuoteForUpdateOrThrow(tx, id);
 
-  if (!quote) {
-    throw new AppError("Orçamento não encontrado", 404);
-  }
+    if (quote.status !== "DRAFT") {
+      throw new AppError("Apenas orçamentos em rascunho podem ser excluídos", 409);
+    }
 
-  if (quote.status !== "DRAFT") {
-    throw new AppError("Apenas orçamentos em rascunho podem ser excluídos", 409);
-  }
-
-  // Items are deleted together with the quote 
-  await prisma.quote.delete({ where: { id } });
-};
+    // Items are deleted together with the quote.
+    await tx.quote.delete({ where: { id } });
+  });
 
 // 8) ============= Add item =============
 export const addQuoteItem = async (quoteId: string, data: CreateQuoteItemInput) =>
   prisma.$transaction(async (tx) => {
     const quote = await getOpenQuoteOrThrow(tx, quoteId);
+
+    const totalItems = await tx.quoteItem.count({ where: { quoteId } });
+    if (totalItems >= MAX_QUOTE_ITEMS) {
+      throw new AppError("Máximo de 100 itens por orçamento", 409);
+    }
 
     await tx.quoteItem.create({ data: { quoteId, ...buildItemData(data) } });
     await recalculateQuote(tx, quoteId, quote.discount);
@@ -236,7 +249,7 @@ export const updateQuoteItem = async (
       throw new AppError("Item não encontrado neste orçamento", 404);
     }
 
-    // PATCH parcial: o que não veio mantém o valor atual
+    // Partial PATCH: omitted fields retain their current values.
     const merged = buildItemData({
       type: data.type ?? current.type,
       description: data.description ?? current.description,
@@ -265,7 +278,7 @@ export const deleteQuoteItem = async (quoteId: string, itemId: string) =>
       throw new AppError("Item não encontrado neste orçamento", 404);
     }
 
-// quote that was already sent must keep at least 1 item
+    // A sent quote must keep at least one item.
     if (quote.status === "SENT") {
       const totalItems = await tx.quoteItem.count({ where: { quoteId } });
       if (totalItems <= 1) {

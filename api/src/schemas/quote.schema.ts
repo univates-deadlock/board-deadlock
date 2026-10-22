@@ -5,6 +5,8 @@ export const quoteItemTypeEnum = z.enum(["PRODUCT", "SERVICE", "OTHER"]);
 
 export type QuoteStatusValue = z.infer<typeof quoteStatusEnum>;
 
+export const MAX_QUOTE_ITEMS = 100;
+
 // ============= Number helpers =============
 const hasMaxTwoDecimals = (value: number) =>
   Math.abs(value * 100 - Math.round(value * 100)) < 1e-6;
@@ -22,13 +24,13 @@ const quantity = z
   .max(99_999_999.99, "Quantidade acima do limite permitido")
   .refine(hasMaxTwoDecimals, "Quantidade deve ter no máximo 2 casas decimais");
 
-// ============= Itens =============
+// ============= Items =============
 const quoteItemFields = {
   type: quoteItemTypeEnum,
   description: z.string().trim().min(1, "Informe a descrição do item"),
   quantity,
   unitPrice: money("Valor unitário"),
-  discount: money("Desconto do item").optional(), // em R$; se omitido, vale 0
+  discount: money("Desconto do item").optional(), // In R$; defaults to 0 when omitted.
 };
 
 export const createQuoteItemSchema = z.strictObject(quoteItemFields);
@@ -48,8 +50,8 @@ export const quoteItemIdSchema = z.string().trim().uuid("Identificador do item i
 export const createQuoteSchema = z.strictObject({
   clientId: z.string().trim().uuid("Identificador do cliente inválido"),
   notes: z.string().trim().nullable().optional(),
-  discount: money("Desconto geral").optional(), // desconto geral em R$; se omitido, vale 0
-  items: z.array(createQuoteItemSchema).max(100, "Máximo de 100 itens por orçamento").optional(),
+  discount: money("Desconto geral").optional(), // Overall discount in R$; defaults to 0 when omitted.
+  items: z.array(createQuoteItemSchema).max(MAX_QUOTE_ITEMS, "Máximo de 100 itens por orçamento").optional(),
 });
 
 export const updateQuoteSchema = z
