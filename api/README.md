@@ -206,10 +206,37 @@ tratar o status HTTP em ambos os casos.
 npm run check:api
 ```
 
-Essa checagem executa lint, TypeScript e build. A entrega atual não tem suíte
-automatizada; `npm test --prefix api` continua disponível para uma futura suíte,
-mas não participa do CI ou de `check:api`. A verificação funcional desta entrega
-foi feita por HTTP contra PostgreSQL separado, com dados fictícios.
+Essa checagem executa lint, TypeScript e build. Os testes automatizados de
+clientes e orçamentos são executados separadamente e ainda não participam do CI ou de
+`check:api`:
+
+```bash
+npm test --prefix api
+```
+
+A suíte usa Vitest para os cálculos e Supertest para as requisições HTTP contra
+a aplicação real, incluindo autenticação por cookie. Os testes de integração
+exigem Docker com daemon ativo: criam um PostgreSQL `postgres:17-alpine` temporário
+em porta aleatória de loopback, aplicam as migrations existentes e removem o
+container ao terminar, inclusive quando um teste falha. A imagem precisa estar
+disponível localmente ou poder ser baixada. O banco e as credenciais do `.env`
+não são usados pelos testes; nenhum banco existente é resetado.
+
+Para executar apenas os cálculos (sem Docker) ou apenas a integração:
+
+```bash
+npm test --prefix api -- --project unit
+npm test --prefix api -- --project integration
+npm test --prefix api -- client.integration.test.ts
+```
+
+Antes da primeira execução, instale as dependências e gere o cliente Prisma
+conforme a seção de configuração. A cobertura inclui cálculos e arredondamento,
+permissões, validação, CRUD, imutabilidade após decisão, rollback de valores fora
+do limite e alterações concorrentes de itens e descontos. Para clientes, inclui
+normalização de dados, unicidade de email (inclusive concorrente), exclusão lógica,
+reativação e preservação do histórico de orçamentos. Os exemplos manuais
+continuam disponíveis em `tests/quote.http`.
 
 ## Problemas comuns
 
