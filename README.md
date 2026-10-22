@@ -66,7 +66,7 @@ api/          Express, TypeScript, Zod, Prisma, autenticação e usuários
 frontend/     Next.js App Router, React e Tailwind
 assets/       logo e imagens dos documentos
 docs/        requisitos, contexto e contrato da API
-.github/      checagens no GitHub Actions
+.github/      CI, deploy automático e instruções/skills do Copilot
 ```
 
 A API e o frontend possuem `package.json` e lockfile próprios. Instale uma
@@ -150,6 +150,13 @@ As variáveis `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_POR
 permitem ajustar o Compose. Ao rodar em servidor remoto, defina `APP_HOST=<ip_ou_host>`
 (por exemplo criando `.env` a partir de `.env.example`) para que CORS, Better Auth
 e a URL pública da API no frontend apontem automaticamente para o endereço de acesso.
+
+## Deploy automático e Copilot
+
+Após o CI passar para um push na `main`, o GitHub Actions pode atualizar a VM
+por SSH e executar o Compose, aguardando a saúde dos serviços sem pausa fixa.
+Configure o clone da VM e os secrets conforme o [guia de deploy](docs/deploy.md).
+O guia também explica as instruções e as duas skills disponibilizadas ao Copilot.
 
 ## Como entender a implementação
 

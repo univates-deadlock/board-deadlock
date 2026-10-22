@@ -1,0 +1,91 @@
+name: Deploy TechPro
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: techpro-board-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Univates VM
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Validate SSH configuration
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_PORT: ${{ secrets.VM_PORT }}
+          SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          for variable in VM_HOST VM_USER SSH_KEY KNOWN_HOSTS; do
+            if [[ -z "${!variable}" ]]; then
+              echo "::error::$variable is missing"
+              exit 1
+            fi
+          done
+
+          port="${VM_PORT:-22}"
+          if [[ ! "$port" =~ ^[0-9]{1,5}$ ]] || (( 10#$port < 1 || 10#$port > 65535 )); then
+            echo '::error::VM_PORT must be a valid TCP port'
+            exit 1
+          fi
+
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > /dev/null
+
+          host_lookup="$VM_HOST"
+          if [[ "$port" != 22 ]]; then
+            host_lookup="[$VM_HOST]:$port"
+          fi
+          ssh-keygen -F "$host_lookup" -f "$HOME/.ssh/known_hosts" > /dev/null || {
+            echo '::error::VM_KNOWN_HOSTS has no matching entry'
+            exit 1
+          }
+
+      - name: Connect and deploy verified commit
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_PORT: ${{ secrets.VM_PORT }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]
+          ssh \
+            -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o PreferredAuthentications=publickey \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=20 \
+            -o ConnectionAttempts=1 \
+            -p "${VM_PORT:-22}" \
+            "${VM_USER}@${VM_HOST}" "bash -se -- $DEPLOY_SHA" \
+            < .github/scripts/deploy.sh
