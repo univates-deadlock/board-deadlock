@@ -225,3 +225,60 @@ svg {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   Data tables: compact uppercase header on a rounded white surface.
+   ========================================================================== */
+
+.tp-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--tp-radius-lg);
+  border: 1px solid var(--tp-border-light);
+  background: #ffffff;
+  box-shadow: var(--tp-shadow-card);
+}
+
+.tp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.tp-table thead {
+  background: var(--tp-neutral-100);
+}
+
+.tp-table th {
+  padding: 9px 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tp-neutral-700);
+}
+
+.tp-table td {
+  padding: 10px 12px;
+  color: var(--tp-text-body);
+  border-top: 1px solid var(--tp-border-light);
+  vertical-align: middle;
+  font-size: 0.875rem;
+}
+
+.tp-table tbody tr:hover {
+  background: var(--tp-neutral-50);
+}
+
+/* Row actions are compact text buttons so they do not compete with the data. */
+.tp-table .btn-tp {
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tp-blue-900);
+}
+
+.tp-table .btn-tp:hover:not(:disabled) {
+  background: var(--tp-neutral-100);
+}
