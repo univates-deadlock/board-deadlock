@@ -65,7 +65,7 @@ export const createClient = async (data: CreateClientInput) => {
 
 // 5) ============= Update client =============
 export const updateClient = async (id: string, data: UpdateClientInput) => {
-  // Garante que o cliente existe antes de atualizar
+  // Ensures that the client exists before updating
   const currentClient = await prisma.client.findUnique({
     where: { id },
     select: { id: true, email: true },
