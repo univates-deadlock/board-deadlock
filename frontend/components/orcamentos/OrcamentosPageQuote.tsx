@@ -13,6 +13,7 @@ import { formatBRL } from "@/lib/money";
 import {
   QUOTE_STATUS_META,
   createQuote,
+  deleteQuote,
   getQuote,
   listQuoteClients,
   listQuotes,
@@ -107,6 +108,11 @@ export function OrcamentosPageQuote() {
   const [formData, setFormData] = useState<QuoteFormData>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /* Delete confirmation: only DRAFT quotes can be deleted (API returns 409 otherwise). */
+  const [deleteTarget, setDeleteTarget] = useState<QuoteListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>("ALL");
@@ -285,6 +291,24 @@ export function OrcamentosPageQuote() {
     }
   }
 
+  /** Confirms the deletion: calls the API, then reloads the list. */
+  async function handleDelete() {
+    if (isDeleting || !deleteTarget) return;
+    setDeleteError("");
+    setIsDeleting(true);
+    try {
+      await deleteQuote(deleteTarget.id);
+      setDeleteTarget(null);
+      setSuccessMessage("Orçamento excluído.");
+      reload();
+    } catch (err) {
+      /* 409 = the quote is no longer a draft (or has a decision recorded). */
+      setDeleteError(err instanceof Error ? err.message : "Não foi possível excluir o orçamento.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   const term = searchTerm.trim().toLowerCase();
   const filtered = quotes.filter((quote) => {
     if (statusFilter !== "ALL" && quote.status !== statusFilter) return false;
@@ -449,6 +473,45 @@ export function OrcamentosPageQuote() {
         </form>
       </Modal>
 
+      {/* Delete confirmation: destructive action, so it is explicit. */}
+      <Modal
+        open={deleteTarget !== null}
+        title="Excluir orçamento"
+        onClose={() => (isDeleting ? null : setDeleteTarget(null))}
+        dismissible={!isDeleting}
+      >
+        {deleteTarget ? (
+          <div className="flex flex-col gap-4">
+            {deleteError ? <Alert tone="error">{deleteError}</Alert> : null}
+            <p className="text-sm text-tp-text-body">
+              Excluir o orçamento de{" "}
+              <strong className="text-tp-text-main">{deleteTarget.clientName}</strong>{" "}
+              ({deleteTarget.id.slice(0, 8).toUpperCase()})? Os itens são excluídos
+              junto e não há como desfazer.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isDeleting}
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                isLoading={isDeleting}
+                loadingLabel="Excluindo…"
+                onClick={handleDelete}
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="w-full max-w-xs">
           <label htmlFor="quote-search" className="sr-only">
@@ -544,6 +607,11 @@ export function OrcamentosPageQuote() {
                       {quote.status === "DRAFT" || quote.status === "SENT" ? (
                         <Button variant="ghost" onClick={() => openEditForm(quote)}>
                           Editar
+                        </Button>
+                      ) : null}
+                      {quote.status === "DRAFT" ? (
+                        <Button variant="ghost" onClick={() => setDeleteTarget(quote)}>
+                          Excluir
                         </Button>
                       ) : null}
                     </div>
