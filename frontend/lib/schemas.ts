@@ -149,7 +149,10 @@ export type ClientInput = z.infer<typeof clientSchema>;
     "EXPIRED"
   ]);
 
-  export const quoteItemTypeEnum = z.enum(["PRODUCT","SERVICE"]);
+  export const quoteItemTypeEnum = z.enum(["PRODUCT","SERVICE", 'OTHER']);
+
+  const hasMaxTwoDecimals = (value: number) =>
+    Math.abs(value * 100 - Math.round(value * 100)) <1e-6;
 
 /**
  * Validates item entries inside a quote.
@@ -162,13 +165,22 @@ export const quoteItemSchema = z.object({
     .min(1, "Informe a descrição do item.")
     .max(200, "Máximo de 200 caracteres."),
   quantity: z
-    .number({invalid_type_error: "Informe uma quantidade válida."})
-    .positive("A quantidade deve ser maior que zero."),
+    .number({error: "Informe uma quantidade válida."})
+    .gt(0, "A quantidade inserida deve ser maior que zero.")
+    .max(99_999_999.99, "Quantidade acima do limite permitido.")
+    .refine(hasMaxTwoDecimals, "Quantidade deve ter no máximo 2 casas decimais."),
   unitPrice: z
-    .number({ invalid_type_error: "Informe um valor unitário válido." })
-    .nonnegative("O valor não pode ser negativo."),
-  discount: z.number().optional(),
-})
+    .number({ error: "Informe um valor unitário válido." })
+    .min(0, "O valor unitário não pode ser negativo.")
+    .max(99_999_999.99, "Valor unitário acima do limite permitido.")
+    .refine(hasMaxTwoDecimals, "Valor unitário deve ter no máximo 2 casas decimais."),
+  discount: z
+    .number({ error: "Informe um desconto válido." })
+    .min(0, "O desconto do item não pode ser negativo.")
+    .max(9_999_999_999.99, "Desconto acima do limite permitido.")
+    .refine(hasMaxTwoDecimals, "Desconto deve ter no máximo 2 casas decimais.")
+    .optional(),
+});
 
 /**
  * Quote creation and edit form.
@@ -180,7 +192,12 @@ export const quoteSchema = z.object({
     .min(1, "Selecione um cliente.")
     .uuid("Identificador de cliente inválido."),
   notes: z.string().trim().optional(),
-  discount: z.number().optional(),
+  discount: z
+    .number({ error: "Informe um desconto geral válido." })
+    .min(0, "O desconto geral não pode ser negativo.")
+    .max(9_999_999_999.99, "Desconto geral acima do limite permitido.")
+    .refine(hasMaxTwoDecimals, "Desconto geral deve ter no máximo 2 casas decimais.")
+    .optional(),
   items: z
     .array(quoteItemSchema)
     .min(1, "Adicione pelo menos 1 item ao orçamento.")
