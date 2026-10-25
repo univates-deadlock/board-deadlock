@@ -15,6 +15,7 @@ import { globalErrorHandler } from "./middlewares/ErrorHandler.js";
 import healthRoute from "./routes/health.route.js";
 import userRoute from "./routes/user.route.js";
 import clientRoute from "./routes/client.route.js";
+import quoteRoute from "./routes/quote.route.js";
 
 // Creates App
 const app = express();
@@ -34,6 +35,7 @@ app.use(json({ limit: "100kb" }));
 app.use('/api/health', healthRoute);
 app.use('/api/users', userRoute);
 app.use('/api/clients', clientRoute);
+app.use('/api/quotes', quoteRoute);
 
 // Global Error Handler
 app.use(globalErrorHandler);
