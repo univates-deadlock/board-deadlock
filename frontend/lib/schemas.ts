@@ -136,3 +136,55 @@ export const clientSchema = z.object({
 });
 
 export type ClientInput = z.infer<typeof clientSchema>;
+
+/* ==========================================================================
+   Quotes — mirrors api/src/schemas/quote.schema.ts
+   ========================================================================== */
+
+  export const quoteStatusSchema =  z.enum([
+    "DRAFT", 
+    "SENT", 
+    "APPROVED", 
+    "REJECTED", 
+    "EXPIRED"
+  ]);
+
+  export const quoteItemTypeEnum = z.enum(["PRODUCT","SERVICE"]);
+
+/**
+ * Validates item entries inside a quote.
+ */
+export const quoteItemSchema = z.object({
+  type: quoteItemTypeEnum,
+  description: z
+    .string()
+    .trim()
+    .min(1, "Informe a descrição do item.")
+    .max(200, "Máximo de 200 caracteres."),
+  quantity: z
+    .number({invalid_type_error: "Informe uma quantidade válida."})
+    .positive("A quantidade deve ser maior que zero."),
+  unitPrice: z
+    .number({ invalid_type_error: "Informe um valor unitário válido." })
+    .nonnegative("O valor não pode ser negativo."),
+  discount: z.number().optional(),
+})
+
+/**
+ * Quote creation and edit form.
+ */
+export const quoteSchema = z.object({
+  clientId: z
+    .string()
+    .trim()
+    .min(1, "Selecione um cliente.")
+    .uuid("Identificador de cliente inválido."),
+  notes: z.string().trim().optional(),
+  discount: z.number().optional(),
+  items: z
+    .array(quoteItemSchema)
+    .min(1, "Adicione pelo menos 1 item ao orçamento.")
+    .max(100, "O orçamento não pode ter mais de 100 itens."),
+})
+
+export type QuoteInput = z.infer<typeof quoteSchema>;
