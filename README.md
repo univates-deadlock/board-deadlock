@@ -41,7 +41,7 @@ Critérios informados para a Parcial 1:
 | README de execução | 0,5 | instalação e execução reproduzíveis |
 | Processo e robustez | 2,0 | divisão de tarefas, Git, validação e erros |
 
-Testes automatizados foram retirados do escopo desta entrega. A API foi verificada
+Testes automatizados foram retirados do escopo original da Parcial 1. A API foi verificada
 funcionalmente por HTTP com PostgreSQL separado e dados fictícios. O CI e
 `npm run check` executam lint, tipos e build, sem exigir suíte de testes.
 
@@ -202,8 +202,10 @@ npm run db:generate --prefix api
 ```
 
 `check` executa lint, verificação TypeScript e build de ambas as aplicações.
-`npm test --prefix api` permanece como comando para uma futura suíte; hoje não há
-arquivos de teste e ele não integra a checagem da Parcial 1. Builds do frontend
+`npm test --prefix api` executa a suíte de clientes e orçamentos com Vitest e Supertest,
+separadamente de `check` e do CI. A integração usa um PostgreSQL descartável no
+Docker; os testes de cálculo podem rodar sem Docker. Veja os comandos e requisitos
+no [guia da API](api/README.md#erros-e-verificações). Builds do frontend
 podem precisar de rede para baixar as fontes configuradas em `next/font/google`.
 
 Para uma tarefa: alinhe o escopo no board, trabalhe em uma branch, faça commits
