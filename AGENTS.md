@@ -33,4 +33,4 @@ The API request flow follows routes → authentication/authorization middleware 
 - Read `.agents/skills/building-typescript-rest-apis/SKILL.md` when creating, changing, or reviewing API endpoints, validation, authentication, Prisma persistence, or API tests.
 - Read `.agents/skills/developing-nextjs-app-router-interfaces/SKILL.md` when creating, changing, or reviewing Next.js pages, React components, forms, API integration, or interface accessibility.
 
-Use each skill's linked references when relevant, especially Express assembly, library authentication, Prisma migrations, verification scope, and cookie-session integration. The matching `.claude/skills/` copies serve Claude Code; keep both installations synchronized when updating skills.
+Use each skill's linked references when relevant, especially Express assembly, library authentication, Prisma migrations, verification scope, and cookie-session integration. The matching `.claude/skills/` copies serve Claude Code and `.github/skills/` copies serve GitHub Copilot, including code review; keep all three installations synchronized when updating skills.

@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-techpro}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techpro}
@@ -17,6 +18,7 @@ services:
 
   api:
     build: ./api
+    restart: unless-stopped
     env_file:
       - path: ./api/.env
         required: false
@@ -34,9 +36,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 30s
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://${APP_HOST:-localhost}:${API_PORT:-4000}}
       API_INTERNAL_URL: http://api:4000
@@ -47,7 +56,14 @@ services:
       - frontend_node_modules:/app/node_modules
       - frontend_next:/app/.next
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 30s
 
 volumes:
   postgres_data:

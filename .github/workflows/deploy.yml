@@ -1,0 +1,198 @@
+name: Deploy TechPro App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: techpro-app-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Univates VM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Configure SSH
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_PORT: ${{ secrets.VM_PORT }}
+          SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+
+          # Validate required secrets
+          [[ -n "$VM_HOST" ]] || {
+            echo '::error::VM_HOST is missing'
+            exit 1
+          }
+
+          [[ -n "$VM_USER" ]] || {
+            echo '::error::VM_USER is missing'
+            exit 1
+          }
+
+          [[ -n "$SSH_KEY" ]] || {
+            echo '::error::VM_SSH_KEY is missing'
+            exit 1
+          }
+
+          [[ -n "$KNOWN_HOSTS" ]] || {
+            echo '::error::VM_KNOWN_HOSTS is missing'
+            exit 1
+          }
+
+          port="${VM_PORT:-22}"
+
+          if [[ ! "$port" =~ ^[0-9]+$ ]] ||
+             (( 10#$port < 1 || 10#$port > 65535 )); then
+            echo '::error::VM_PORT must be a valid TCP port'
+            exit 1
+          fi
+
+          # Configure SSH credentials
+          umask 077
+          mkdir -p "$HOME/.ssh"
+
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' \
+            > "$HOME/.ssh/id_ed25519"
+
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' \
+            > "$HOME/.ssh/known_hosts"
+
+          chmod 600 \
+            "$HOME/.ssh/id_ed25519" \
+            "$HOME/.ssh/known_hosts"
+
+          # Validate private key
+          ssh-keygen -y \
+            -f "$HOME/.ssh/id_ed25519" \
+            > /dev/null || {
+              echo '::error::Invalid SSH private key'
+              exit 1
+            }
+
+          # Validate known host for configured SSH port
+          host_lookup="$VM_HOST"
+
+          if [[ "$port" != 22 ]]; then
+            host_lookup="[$VM_HOST]:$port"
+          fi
+
+          ssh-keygen -F "$host_lookup" \
+            -f "$HOME/.ssh/known_hosts" \
+            > /dev/null || {
+              echo '::error::SSH host not found in known_hosts'
+              exit 1
+            }
+
+          echo "SSH configuration validated successfully."
+
+      - name: Connect and deploy
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_PORT: ${{ secrets.VM_PORT }}
+        run: |
+          set -Eeuo pipefail
+
+          ssh \
+            -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o PreferredAuthentications=publickey \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=15 \
+            -o ConnectionAttempts=1 \
+            -p "${VM_PORT:-22}" \
+            "${VM_USER}@${VM_HOST}" 'bash -se' <<'REMOTE'
+          set -Eeuo pipefail
+
+          report_failure() {
+            local exit_code=$?
+
+            echo "::error::Deployment failed (exit code: $exit_code)"
+
+            if [[ -f docker-compose.yml || -f compose.yaml ]]; then
+              echo "::group::Docker diagnostics"
+              sudo docker compose ps || true
+              sudo docker compose logs \
+                --no-color --tail 80 api frontend || true
+              echo "::endgroup::"
+            fi
+
+            exit "$exit_code"
+          }
+
+          trap report_failure ERR
+
+          # Navigate to application directory
+          cd "$HOME/techpro-app"
+
+          echo "::group::Updating repository"
+
+          git checkout main
+          git pull --ff-only origin main
+
+          echo "Deployed commit: $(git rev-parse --short HEAD)"
+
+          echo "::endgroup::"
+
+          # Build and restart application
+          echo "::group::Docker deployment"
+
+          sudo docker compose config --quiet
+          sudo docker compose up -d --build
+          sudo docker compose ps
+
+          echo "::endgroup::"
+
+          # Verify application availability
+          echo "::group::HTTP health check"
+
+          curl -fsS \
+            --retry 5 \
+            --retry-delay 2 \
+            --retry-connrefused \
+            --retry-all-errors \
+            --max-time 10 \
+            -o /dev/null \
+            -w 'API HTTP status: %{http_code}\n' \
+            http://127.0.0.1:4000/api/health
+
+          curl -fsS \
+            --retry 5 \
+            --retry-delay 2 \
+            --retry-connrefused \
+            --retry-all-errors \
+            --max-time 10 \
+            -o /dev/null \
+            -w 'Frontend HTTP status: %{http_code}\n' \
+            http://127.0.0.1:3000/login
+
+          echo "Health check passed."
+          echo "::endgroup::"
+
+          # Remove unused dangling Docker images
+          echo "::group::Docker cleanup"
+
+          sudo docker image prune -f || true
+
+          echo "::endgroup::"
+
+          echo "Deploy completed successfully."
+          REMOTE
