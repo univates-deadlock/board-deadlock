@@ -1,6 +1,10 @@
 import { prisma } from "../lib/prisma.js";
 import type { Prisma } from "../../generated/prisma/client.js";
-import type { CreateClientInput, UpdateClientInput } from "../schemas/client.schema.js";
+import {
+  isDocumentCompatibleWithType,
+  type CreateClientInput,
+  type UpdateClientInput,
+} from "../schemas/client.schema.js";
 import { AppError } from "../utils/AppError.js";
 
 // 1)  ============= Select all clients fields from prisma ============= 
@@ -68,11 +72,26 @@ export const updateClient = async (id: string, data: UpdateClientInput) => {
   // Ensures that the client exists before updating
   const currentClient = await prisma.client.findUnique({
     where: { id },
-    select: { id: true, email: true },
+    select: { id: true, email: true, type: true, document: true },
   });
 
   if (!currentClient) {
     throw new AppError("Cliente não encontrado", 404);
+  }
+
+  if (data.type !== undefined || data.document !== undefined) {
+    const effectiveType = data.type ?? currentClient.type;
+    const effectiveDocument =
+      data.document !== undefined ? data.document : currentClient.document;
+
+    if (effectiveDocument && !isDocumentCompatibleWithType(effectiveDocument, effectiveType)) {
+      throw new AppError(
+        effectiveType === "COMPANY"
+          ? "Informe um CNPJ válido para cliente Pessoa Jurídica"
+          : "Informe um CPF válido para cliente Pessoa Física",
+        400
+      );
+    }
   }
 
   // If the email changed, check if it already exists

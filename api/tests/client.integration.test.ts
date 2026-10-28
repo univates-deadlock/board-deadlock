@@ -147,5 +147,63 @@ describe("Client integration tests", () => {
       expect(response.body.fields).toBeDefined();
       expect(await prisma.client.count()).toBe(0);
     });
+
+    it("rejects client with invalid CPF or invalid phone/whatsapp with 400 Bad Request", async () => {
+      const badCpfResponse = await agentWithCookie(admin.cookie)
+        .post("/api/clients")
+        .send({
+          ...validClient,
+          email: "badcpf@example.com",
+          document: "11111111111",
+        })
+        .expect(400);
+
+      expect(badCpfResponse.body.fields).toEqual(
+        expect.arrayContaining([expect.objectContaining({ path: "document" })])
+      );
+
+      const badPhoneResponse = await agentWithCookie(admin.cookie)
+        .post("/api/clients")
+        .send({
+          ...validClient,
+          email: "badphone@example.com",
+          whatsapp: "0012345678",
+        })
+        .expect(400);
+
+      expect(badPhoneResponse.body.fields).toEqual(
+        expect.arrayContaining([expect.objectContaining({ path: "whatsapp" })])
+      );
+
+      expect(await prisma.client.count()).toBe(0);
+    });
+
+    it("enforces document/type compatibility on create and partial update", async () => {
+      const created = await agentWithCookie(admin.cookie)
+        .post("/api/clients")
+        .send({
+          ...validClient,
+          email: "cpfclient@example.com",
+          document: "52998224725",
+        })
+        .expect(201);
+
+      expect(created.body.document).toBe("52998224725");
+
+      // Changing type to COMPANY without updating CPF document must fail with 400
+      await agentWithCookie(admin.cookie)
+        .patch(`/api/clients/${created.body.id as string}`)
+        .send({ type: "COMPANY" })
+        .expect(400);
+
+      // Updating both type and valid CNPJ succeeds
+      const updated = await agentWithCookie(admin.cookie)
+        .patch(`/api/clients/${created.body.id as string}`)
+        .send({ type: "COMPANY", document: "11222333000181" })
+        .expect(200);
+
+      expect(updated.body.type).toBe("COMPANY");
+      expect(updated.body.document).toBe("11222333000181");
+    });
   });
 });
