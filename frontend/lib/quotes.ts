@@ -93,11 +93,21 @@ export type QuoteItemPayload = {
   discount?: number;
 };
 
+export type QuoteUpdateItemPayload = QuoteItemPayload & {
+  id?: string;
+};
+
 export type CreateQuotePayload = {
   clientId: string;
   notes?: string | null;
   discount?: number;
   items?: QuoteItemPayload[];
+};
+
+export type UpdateQuotePayload = {
+  notes?: string | null;
+  discount?: number;
+  items?: QuoteUpdateItemPayload[];
 };
 
 /** POST /api/quotes — creates a quote in DRAFT (201 with items). */
@@ -119,10 +129,10 @@ export async function createQuote(payload: CreateQuotePayload): Promise<Quote> {
   return mapQuote((await res.json()) as RawQuote);
 }
 
-/** PATCH /api/quotes/:id — updates only notes and the general discount. */
+/** PATCH /api/quotes/:id — atomically updates notes, general discount and/or items. */
 export async function updateQuote(
   id: string,
-  payload: { notes?: string | null; discount?: number },
+  payload: UpdateQuotePayload,
 ): Promise<Quote> {
   let res: Response;
   try {
@@ -142,13 +152,11 @@ export async function updateQuote(
 }
 
 /**
- * PUT-like sync of items: the quote PATCH endpoint does not accept items,
- * so the form diffs the current items against the desired ones and calls
- * the item endpoints one by one (add, update, remove).
+ * Synchronizes quote items individually via the item sub-routes when needed.
  */
 export async function syncQuoteItems(
   quoteId: string,
-  desired: QuoteItemPayload[],
+  desired: QuoteUpdateItemPayload[],
   current: QuoteItem[],
 ): Promise<void> {
   const call = async (path: string, method: string, body?: unknown) => {
@@ -168,27 +176,28 @@ export async function syncQuoteItems(
     }
   };
 
-  /* Match by description+type first (naive row identity), then positional. */
   const remaining = [...current];
 
   for (const desiredItem of desired) {
-    /* Prefer an existing item with the same description to update in place. */
-    const matchIndex = remaining.findIndex(
-      (item) => item.description.trim() === desiredItem.description.trim(),
-    );
+    const { id: desiredId, ...itemBody } = desiredItem;
+    const matchIndex = desiredId
+      ? remaining.findIndex((item) => item.id === desiredId)
+      : remaining.findIndex(
+          (item) =>
+            item.type === itemBody.type &&
+            item.description.trim() === itemBody.description.trim(),
+        );
     if (matchIndex >= 0) {
       const existing = remaining[matchIndex];
       remaining.splice(matchIndex, 1);
-      await call(`/${quoteId}/items/${existing.id}`, "PATCH", desiredItem);
+      await call(`${quoteId}/items/${existing.id}`, "PATCH", itemBody);
     } else {
-      await call(`/${quoteId}/items`, "POST", desiredItem);
+      await call(`${quoteId}/items`, "POST", itemBody);
     }
   }
 
-  /* Whatever is left in `remaining` was removed in the form. */
   for (const removed of remaining) {
-    /* A SENT quote must keep at least one item; the API enforces (409). */
-    await call(`/${quoteId}/items/${removed.id}`, "DELETE");
+    await call(`${quoteId}/items/${removed.id}`, "DELETE");
   }
 }
 

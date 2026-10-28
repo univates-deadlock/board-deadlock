@@ -16,33 +16,74 @@ export function formatBRL(cents: number): string {
 
 /**
  * Parses typed text into cents. Accepts "1.234,56", "1234,56", "1234.56",
- * "R$ 12" — anything that is not digits, comma or dot is stripped, then the
- * last separator (if any) is treated as the decimal separator.
- *
- * Returns null when the text has no digits at all.
+ * "1.500", "R$ 12" — rejects negative numbers, letters, malformed separators,
+ * or more than 2 decimal places by returning null.
  */
 export function parseMoneyToCents(text: string): number | null {
-  const cleaned = (text ?? "").replace(/[^\d,.]/g, "");
-  if (!cleaned) return null;
+  const stripped = (text ?? "").trim().replace(/^R\$\s*/i, "").trim();
+  if (!stripped) return null;
+  if (!/^[0-9.,]+$/.test(stripped) || !/\d/.test(stripped)) return null;
 
-  const lastComma = cleaned.lastIndexOf(",");
-  const lastDot = cleaned.lastIndexOf(".");
-  const lastSep = Math.max(lastComma, lastDot);
+  const hasComma = stripped.includes(",");
+  const hasDot = stripped.includes(".");
 
-  let wholeDigits = cleaned;
+  let wholeDigits = "";
   let decimalDigits = "";
 
-  if (lastSep !== -1) {
-    /* Everything before the last separator is the whole part; earlier
-       separators (thousands) are dropped. */
-    wholeDigits = cleaned.slice(0, lastSep).replace(/[.,]/g, "");
-    /* Only digits after the separator count; extra decimals are truncated. */
-    decimalDigits = cleaned.slice(lastSep + 1).replace(/\D/g, "");
+  if (hasComma && hasDot) {
+    const lastComma = stripped.lastIndexOf(",");
+    const lastDot = stripped.lastIndexOf(".");
+    if (lastComma > lastDot) {
+      // pt-BR: "1.234,56"
+      const parts = stripped.split(",");
+      if (parts.length !== 2) return null;
+      if (!/^\d{1,3}(\.\d{3})*$/.test(parts[0])) return null;
+      if (!/^\d{1,2}$/.test(parts[1])) return null;
+      wholeDigits = parts[0].replace(/\./g, "");
+      decimalDigits = parts[1];
+    } else {
+      // en-US: "1,234.56"
+      const parts = stripped.split(".");
+      if (parts.length !== 2) return null;
+      if (!/^\d{1,3}(,\d{3})*$/.test(parts[0])) return null;
+      if (!/^\d{1,2}$/.test(parts[1])) return null;
+      wholeDigits = parts[0].replace(/,/g, "");
+      decimalDigits = parts[1];
+    }
+  } else if (hasComma) {
+    const parts = stripped.split(",");
+    if (parts.length !== 2) return null;
+    if (!/^\d*$/.test(parts[0]) || !/^\d{0,2}$/.test(parts[1])) return null;
+    wholeDigits = parts[0];
+    decimalDigits = parts[1];
+  } else if (hasDot) {
+    const parts = stripped.split(".");
+    if (parts.length > 2) {
+      // Multiple dots: valid only as thousands separators ("1.000.000")
+      if (!/^\d{1,3}(\.\d{3})+$/.test(stripped)) return null;
+      wholeDigits = stripped.replace(/\./g, "");
+    } else if (/^[1-9]\d{0,2}\.\d{3}$/.test(stripped)) {
+      // Single dot with 3 digits after non-zero leading group ("1.500" -> R$ 1.500,00)
+      wholeDigits = parts[0] + parts[1];
+    } else {
+      if (!/^\d*$/.test(parts[0]) || !/^\d{0,2}$/.test(parts[1])) return null;
+      wholeDigits = parts[0];
+      decimalDigits = parts[1];
+    }
+  } else {
+    wholeDigits = stripped;
   }
 
   const whole = Number.parseInt(wholeDigits || "0", 10);
   const decimals = Number.parseInt((decimalDigits + "00").slice(0, 2), 10);
+  if (!Number.isSafeInteger(whole * 100 + decimals)) return null;
   return whole * 100 + decimals;
+}
+
+/** Formats integer cents for a plain text money field ("0" or "250,50"). */
+export function formatCentsForInput(cents: number): string {
+  if (!cents) return "0";
+  return (cents / 100).toFixed(2).replace(".", ",");
 }
 
 /**

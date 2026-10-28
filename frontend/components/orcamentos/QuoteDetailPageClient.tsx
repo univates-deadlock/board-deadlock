@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { QuoteFormModal } from "@/components/orcamentos/QuoteFormModal";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/icons";
 import { formatBRL, formatDateTime, formatQuantity } from "@/lib/money";
@@ -12,16 +14,13 @@ import {
   QUOTE_ITEM_TYPE_META,
   QUOTE_STATUS_META,
   getQuote,
+  isQuoteOpen,
   type Quote,
 } from "@/lib/quotes";
 
 /**
- * Quote detail screen: what GET /api/quotes/:id returns.
- *
- * The API delivers no state transitions yet — nothing can send a quote,
- * record its decision or store evidence, and editing (notes, general
- * discount, items) lives in the quote forms. So this screen is read-only
- * for now; the send/decision actions return together with the endpoints.
+ * Quote detail screen: displays items, financial summary (reconciling item
+ * discounts and general discount), history, and editing while open.
  */
 
 export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
@@ -29,6 +28,8 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -77,29 +78,68 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   }
 
   const meta = QUOTE_STATUS_META[quote.status];
+  const itemDiscountsCents = quote.items.reduce((sum, item) => sum + item.discountCents, 0);
+  const grossItemsCents = quote.subtotalCents + itemDiscountsCents;
+  const generalDiscountCents = quote.discountCents;
+  const totalDiscountsCents = itemDiscountsCents + generalDiscountCents;
+  const hasBothDiscountTypes = itemDiscountsCents > 0 && generalDiscountCents > 0;
 
   return (
     <div>
-      <div className="mb-6">
-        <button
-          type="button"
-          onClick={() => router.push("/orcamentos")}
-          className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tp-text-body hover:text-tp-text-main"
-        >
-          <Icon name="back" size={16} />
-          Orçamentos
-        </button>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1
-            className="text-xl font-semibold tracking-tight text-tp-text-main"
-            title={quote.id}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <button
+            type="button"
+            onClick={() => router.push("/orcamentos")}
+            className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tp-text-body hover:text-tp-text-main"
           >
-            {quote.id.slice(0, 8).toUpperCase()}
-          </h1>
-          <Badge tone={meta.badgeTone}>{meta.label}</Badge>
+            <Icon name="back" size={16} />
+            Orçamentos
+          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1
+              className="text-xl font-semibold tracking-tight text-tp-text-main"
+              title={quote.id}
+            >
+              {quote.id.slice(0, 8).toUpperCase()}
+            </h1>
+            <Badge tone={meta.badgeTone}>{meta.label}</Badge>
+          </div>
+          <p className="mt-1 text-sm text-tp-text-muted">{quote.clientName}</p>
         </div>
-        <p className="mt-1 text-sm text-tp-text-muted">{quote.clientName}</p>
+
+        {isQuoteOpen(quote.status) ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSuccessMessage("");
+              setShowEditModal(true);
+            }}
+          >
+            Editar orçamento
+          </Button>
+        ) : null}
       </div>
+
+      {successMessage ? (
+        <div className="mb-6">
+          <Alert tone="success">{successMessage}</Alert>
+        </div>
+      ) : null}
+
+      <QuoteFormModal
+        open={showEditModal}
+        mode="edit"
+        quote={quote}
+        clients={[{ id: quote.clientId, name: quote.clientName }]}
+        fallbackClientName={quote.clientName}
+        onClose={() => setShowEditModal(false)}
+        onSaved={(saved) => {
+          setQuote(saved);
+          setShowEditModal(false);
+          setSuccessMessage("Orçamento atualizado.");
+        }}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
@@ -115,9 +155,9 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
                       <th>Tipo</th>
                       <th>Descrição</th>
                       <th className="text-right">Qtd.</th>
-                      <th className="text-right">Valor unit.</th>
-                      <th className="text-right">Desconto</th>
-                      <th className="text-right">Subtotal</th>
+                      <th className="text-right">Valor unit. (R$)</th>
+                      <th className="text-right">Desconto (R$)</th>
+                      <th className="text-right">Subtotal (R$)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -128,7 +168,7 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
                         <td className="text-right">{formatQuantity(item.quantity)}</td>
                         <td className="text-right">{formatBRL(item.unitPriceCents)}</td>
                         <td className="text-right">
-                          {item.discountCents ? `-${formatBRL(item.discountCents)}` : "-"}
+                          {item.discountCents > 0 ? `-${formatBRL(item.discountCents)}` : "-"}
                         </td>
                         <td className="text-right font-semibold text-tp-text-main">
                           {formatBRL(item.subtotalCents)}
@@ -155,18 +195,59 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
           <Card className="p-6">
             <h2 className="mb-4 text-lg font-semibold text-tp-text-main">Resumo</h2>
             <dl className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-tp-text-body">Subtotal</dt>
-                <dd className="font-semibold text-tp-text-main">
-                  {formatBRL(quote.subtotalCents)}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-tp-text-body">Descontos</dt>
-                <dd className="font-semibold text-tp-danger">
-                  -{formatBRL(quote.discountCents)}
-                </dd>
-              </div>
+              {hasBothDiscountTypes ? (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-tp-text-body">Subtotal bruto</dt>
+                    <dd className="font-semibold text-tp-text-main">
+                      {formatBRL(grossItemsCents)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-tp-text-body">Descontos nos itens</dt>
+                    <dd className="font-semibold text-tp-danger">
+                      -{formatBRL(itemDiscountsCents)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-tp-text-body">Subtotal</dt>
+                    <dd className="font-semibold text-tp-text-main">
+                      {formatBRL(quote.subtotalCents)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-tp-text-body">Desconto geral</dt>
+                    <dd className="font-semibold text-tp-danger">
+                      -{formatBRL(generalDiscountCents)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t border-tp-border-light pt-2">
+                    <dt className="text-tp-text-body">Descontos totais</dt>
+                    <dd className="font-semibold text-tp-danger">
+                      -{formatBRL(totalDiscountsCents)}
+                    </dd>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-tp-text-body">
+                      {itemDiscountsCents > 0 ? "Subtotal bruto" : "Subtotal"}
+                    </dt>
+                    <dd className="font-semibold text-tp-text-main">
+                      {formatBRL(itemDiscountsCents > 0 ? grossItemsCents : quote.subtotalCents)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-tp-text-body">Descontos</dt>
+                    <dd className="font-semibold text-tp-danger">
+                      {totalDiscountsCents > 0
+                        ? `-${formatBRL(totalDiscountsCents)}`
+                        : formatBRL(0)}
+                    </dd>
+                  </div>
+                </>
+              )}
               <div className="mt-1 flex justify-between border-t border-tp-border-light pt-3 text-base">
                 <dt className="font-bold text-tp-text-main">Total</dt>
                 <dd className="font-bold text-tp-green-600">{formatBRL(quote.totalCents)}</dd>
