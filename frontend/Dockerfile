@@ -1,4 +1,5 @@
-FROM node:24-bookworm-slim
+
+FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -7,6 +8,27 @@ RUN npm ci
 
 COPY . .
 
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build
+
+FROM node:24-bookworm-slim AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=node:node /app/.next ./.next
+
+USER node
+
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm ci --offline --no-audit && npm run dev"]
+CMD ["npm", "run", "start"]
