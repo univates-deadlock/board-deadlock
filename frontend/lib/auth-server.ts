@@ -1,17 +1,27 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+
+export const userRoleSchema = z.enum(["ADMIN", "PLANNING", "TECHNICIAN"]);
+export type UserRole = z.infer<typeof userRoleSchema>;
 
 const activeSessionSchema = z.object({
   session: z.object({ id: z.string().min(1) }),
   user: z.object({
     id: z.string().min(1),
+    name: z.string(),
+    email: z.string(),
+    role: userRoleSchema,
     isActive: z.literal(true),
   }),
 });
 
-/** Verify the incoming cookie with the API before rendering a protected page. */
-export async function requireActiveSession(): Promise<void> {
+export type ActiveSession = z.infer<typeof activeSessionSchema>;
+export type SessionUser = ActiveSession["user"];
+
+/** Verify the incoming cookie with the API once per SSR request. */
+export const requireActiveSession = cache(async (): Promise<ActiveSession> => {
   const cookieHeader = (await headers()).get("cookie");
 
   if (!cookieHeader) redirect("/login");
@@ -35,4 +45,17 @@ export async function requireActiveSession(): Promise<void> {
 
   const session = activeSessionSchema.safeParse(await response.json());
   if (!session.success) redirect("/login");
+
+  return session.data;
+});
+
+/** Verify session and redirect to "/" when the user's role is not allowed on the page. */
+export async function requireRoleSession(
+  allowedRoles: readonly UserRole[],
+): Promise<ActiveSession> {
+  const session = await requireActiveSession();
+  if (!allowedRoles.includes(session.user.role)) {
+    redirect("/");
+  }
+  return session;
 }

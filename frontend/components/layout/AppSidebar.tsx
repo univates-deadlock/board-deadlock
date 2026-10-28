@@ -2,64 +2,44 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
-import { authClient } from "@/lib/auth-client";
+import type { SessionUser, UserRole } from "@/lib/auth-server";
 
 type NavItem = {
   label: string;
   href: string;
   /** Roles allowed to see this item; omitted means everyone. */
-  roles?: string[];
+  roles?: UserRole[];
 };
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/" },
-  { label: "Clientes", href: "/clientes" },
-  { label: "Orçamentos", href: "/orcamentos" },
+  { label: "Clientes", href: "/clientes", roles: ["ADMIN", "PLANNING"] },
+  { label: "Orçamentos", href: "/orcamentos", roles: ["ADMIN", "PLANNING"] },
   { label: "Serviços", href: "/servicos" },
-  { label: "Garantias", href: "/garantias" },
-  { label: "Revisões", href: "/revisoes" },
+  { label: "Garantias", href: "/garantias", roles: ["ADMIN", "PLANNING"] },
+  { label: "Revisões", href: "/revisoes", roles: ["ADMIN", "PLANNING"] },
   { label: "Usuários", href: "/usuarios", roles: ["ADMIN"] },
 ];
 
-type SessionUser = {
-  name?: string;
-  email?: string;
-  role?: string;
-};
-
-const ROLE_LABELS: Record<string, string> = {
+const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: "Administrador",
   PLANNING: "Orçamento / Planejamento",
   TECHNICIAN: "Técnico",
 };
 
 export function AppSidebar({
+  user,
   mobileOpen,
   onCloseMobile,
 }: {
+  user: SessionUser;
   mobileOpen: boolean;
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLElement>(null);
-  const [user, setUser] = useState<SessionUser | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    authClient
-      .getSession()
-      .then(({ data }) => {
-        if (active && data?.user) setUser(data.user as SessionUser);
-      })
-      .catch(() => {
-        /* Session unavailable — the sidebar shows without user info. */
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -97,7 +77,7 @@ export function AppSidebar({
   }, [mobileOpen, onCloseMobile]);
 
   const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || (user?.role && item.roles.includes(user.role)),
+    (item) => !item.roles || item.roles.includes(user.role),
   );
 
   return (
@@ -166,14 +146,12 @@ export function AppSidebar({
         </nav>
 
         {/* User info at the bottom */}
-        {user ? (
-          <div className="border-t border-white/10 px-5 py-4">
-            <p className="text-sm font-semibold text-white">{user.name}</p>
-            <p className="text-xs text-white/50">
-              {ROLE_LABELS[user.role ?? ""] ?? user.role}
-            </p>
-          </div>
-        ) : null}
+        <div className="border-t border-white/10 px-5 py-4">
+          <p className="text-sm font-semibold text-white">{user.name}</p>
+          <p className="text-xs text-white/50">
+            {ROLE_LABELS[user.role] ?? user.role}
+          </p>
+        </div>
       </aside>
     </>
   );

@@ -1,6 +1,8 @@
 import { DevPage } from "@/components/layout/DevPage";
+import { requireRoleSession } from "@/lib/auth-server";
 
-export default function RevisoesPage() {
+export default async function RevisoesPage() {
+  await requireRoleSession(["ADMIN", "PLANNING"]);
   return (
     <DevPage
       title="Revisões"

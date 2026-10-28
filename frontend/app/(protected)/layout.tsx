@@ -12,7 +12,7 @@ import { requireActiveSession } from "@/lib/auth-server";
 export default async function ProtectedLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  await requireActiveSession();
+  const { user } = await requireActiveSession();
 
-  return <AppShell>{children}</AppShell>;
+  return <AppShell user={user}>{children}</AppShell>;
 }
