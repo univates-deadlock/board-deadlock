@@ -1,21 +1,10 @@
 # Services
 
-Implementam regras e persistência, sem receber `req` ou `res`.
-`user.service.ts` concentra as operações de usuários:
+Concentram regras de negócio, cálculos e persistência via Prisma, sem acoplamento com `req` ou `res`:
 
-- `userSelect` limita os campos retornados; senha, contas e sessões ficam fora.
-- `createUser` usa `hashPassword` do Better Auth e cria usuário + conta `credential`
-  em uma transação; o hash segue o mesmo algoritmo usado no login.
-- `createInitialAdmin` provisiona o primeiro administrador e recusa sobrescritas.
-- `updateUser` revoga sessões ao mudar email/perfil.
-- `deactivateUser` mantém o usuário, marca `isActive=false` e apaga suas sessões.
-- Alterações que removem um administrador verificam se outro ativo permanece.
+- `user.service.ts`: filtra campos públicos (`userSelect`), cria usuário + conta `credential` em transação com `hashPassword` do Better Auth, provisiona o administrador inicial (`createInitialAdmin`), revoga sessões ao desativar ou alterar e-mail/perfil e protege o próprio usuário e o último `ADMIN` ativo com isolamento `Serializable`.
+- `client.service.ts`: listagem, consulta por UUID, criação, atualização parcial com verificação de unicidade de e-mail (`409`) e ativação/inativação lógica (`active`).
+- `quote.calculations.ts`: funções puras de cálculo monetário usando exclusivamente `Prisma.Decimal` com arredondamento `ROUND_HALF_UP` em 2 casas decimais e verificação de descontos e limites `Decimal(12, 2)` (`422`).
+- `quote.service.ts`: listagem com filtros opcionais, consulta detalhada com itens, criação em `DRAFT` para clientes ativos, edição de cabeçalho/itens restrita a orçamentos em aberto (`DRAFT` ou `SENT`), exclusão física restrita a `DRAFT` e bloqueio pessimista (`SELECT ... FOR UPDATE`) para recálculo transacional seguro sob concorrência.
 
-As transações de proteção de administradores usam isolamento `Serializable` para
-que alterações concorrentes não removam todos os admins. Conflitos retornam
-`409`; o cliente pode repetir a operação após atualizar seus dados.
-
-Para consultas únicas use Prisma diretamente. Use transações quando várias
-mudanças precisam ser atômicas ou quando a regra depende de uma leitura seguida
-de gravação. Erros esperados de negócio usam `AppError`; erros Prisma seguem para
-o tratamento global.
+Erros esperados de negócio lançam `AppError`; violações e erros do Prisma seguem para o `globalErrorHandler`.

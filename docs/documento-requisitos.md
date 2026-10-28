@@ -13,6 +13,8 @@
 - Mateus Carniel Brambilla
 - Taina Luiza Schmidt
 
+> **Nota sobre escopo e implementação:** este documento especifica o produto completo planejado (MVP) e suas regras de negócio. Para consultar o que já está implementado na entrega atual (Parcial 2), veja o [README principal](../README.md) e o [índice da documentação](./README.md).
+
 ---
 
 ## Sumário
@@ -221,7 +223,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 
 O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associação dos atores (Gestor/Administrador, Orçamento/Planejamento e Técnico) com cada funcionalidade.
 
-![Diagrama geral de casos de uso da TechPro](/assets/images/prd/diagrama-casos-de-uso.png)
+![Diagrama geral de casos de uso da TechPro](../assets/images/prd/diagrama-casos-de-uso.png)
 
 ## 10.2 Catálogo e rastreabilidade
 
@@ -397,7 +399,7 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principais entidades e cardinalidades.
 
-![Diagrama Entidade-Relacionamento da TechPro](/assets/images/prd/diagrama-entidade-relacionamento.png)
+![Diagrama Entidade-Relacionamento da TechPro](../assets/images/prd/diagrama-entidade-relacionamento.png)
 
 ## 11.1 Entidades principais
 

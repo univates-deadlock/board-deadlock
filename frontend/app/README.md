@@ -1,13 +1,14 @@
-# Páginas do App Router
+# Páginas do App Router (`frontend/app`)
 
-`layout.tsx` define a estrutura comum e as fontes. `page.tsx` é a página inicial;
-`globals.css` contém estilos globais. A tela atual ainda é a inicial do Next.js.
+Estrutura de rotas da aplicação Next.js:
 
-A página institucional conforme Figma e as telas de autenticação/usuários devem
-ser criadas pelos responsáveis pelo frontend. Preserve Server Components onde
-não é necessário comportamento no navegador; formulários interativos precisam
-de Client Components.
+- `layout.tsx` e `globals.css`: layout raiz em `pt-BR`, carregamento da fonte `Rubik` e tokens visuais compartilhados com a identidade da TechPro.
+- `login/page.tsx`: tela pública de autenticação por e-mail e senha.
+- `(protected)/layout.tsx`: layout servidor que executa `requireActiveSession()` antes de renderizar o `AppShell`, redirecionando visitantes sem sessão ativa para `/login`.
+- `(protected)/page.tsx`: painel inicial ("Visão geral") com indicadores e listagem de orçamentos em aberto derivados de `GET /api/quotes`.
+- `(protected)/usuarios/page.tsx`: gerenciamento de usuários (`ADMIN`).
+- `(protected)/clientes/page.tsx`: gerenciamento de clientes (`ADMIN` e `PLANNING`).
+- `(protected)/orcamentos/page.tsx` e `(protected)/orcamentos/[id]/page.tsx`: listagem, criação, edição, exclusão de rascunhos e visualização detalhada de orçamentos (`ADMIN` e `PLANNING`).
+- `(protected)/servicos/page.tsx`, `(protected)/garantias/page.tsx` e `(protected)/revisoes/page.tsx`: páginas `DevPage` ("Em desenvolvimento") reservadas para as próximas etapas.
 
-Os formulários de usuários devem seguir o contrato em
-[docs/api-usuarios.md](../../docs/api-usuarios.md). Não apresente campos de
-cadastro que a API não aceita. Trate `401`, `403`, `400` e `409` na interface.
+Mantenha Server Components como padrão em layouts e páginas de entrada, delegando interatividade de formulários, modais e filtros aos Client Components em `frontend/components/`. Os contratos de requisição e resposta estão documentados em [`api/README.md`](../../api/README.md).
