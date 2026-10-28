@@ -10,6 +10,7 @@ import { clientSchema } from "@/lib/schemas";
 import {
   maskDocument,
   maskPhone,
+  normalizePhoneDigits,
   onlyDigits,
   type DocumentKind,
 } from "@/lib/masks";
@@ -94,14 +95,18 @@ function toPayload(form: ClientFormData) {
     const d = onlyDigits(value);
     return d ? d : null;
   };
+  const optionalPhone = (value: string) => {
+    const d = normalizePhoneDigits(value);
+    return d ? d : null;
+  };
 
   return {
     type: form.type,
     name: form.name.trim(),
     document: optionalDigits(form.document),
     contactName: optional(form.contactName),
-    phone: optionalDigits(form.phone),
-    whatsapp: onlyDigits(form.whatsapp),
+    phone: optionalPhone(form.phone),
+    whatsapp: normalizePhoneDigits(form.whatsapp),
     location: form.location.trim(),
     email: optional(form.email),
     notes: optional(form.notes),
@@ -109,24 +114,37 @@ function toPayload(form: ClientFormData) {
 }
 
 /** Reads the API error body, falling back to a status-based message. */
-async function readError(res: Response, fallback: string): Promise<string> {
+async function readErrorDetails(
+  res: Response,
+  fallback: string,
+): Promise<{ message: string; fields: Record<string, string> }> {
   try {
     const body = await res.json();
-    /* Zod validation errors arrive as { error, fields: [{ path, message }] }. */
+    const fields: Record<string, string> = {};
     if (Array.isArray(body?.fields) && body.fields.length > 0) {
-      return body.fields
+      for (const f of body.fields as { path?: string; message?: string }[]) {
+        if (f.path && f.message && !fields[f.path]) {
+          fields[f.path] = f.message;
+        }
+      }
+      const message = body.fields
         .map((f: { path: string; message: string }) => f.message)
         .join(" ");
+      return { message, fields };
     }
-    if (typeof body?.error === "string") return body.error;
+    if (typeof body?.error === "string") return { message: body.error, fields };
   } catch {
     /* Body was not JSON; fall through to the status-based message. */
   }
-  if (res.status === 401) return "Sessão expirada. Entre novamente.";
+  if (res.status === 401) return { message: "Sessão expirada. Entre novamente.", fields: {} };
   if (res.status === 403) {
-    return "Acesso negado: seu perfil não pode gerenciar clientes.";
+    return { message: "Acesso negado: seu perfil não pode gerenciar clientes.", fields: {} };
   }
-  return fallback;
+  return { message: fallback, fields: {} };
+}
+
+async function readError(res: Response, fallback: string): Promise<string> {
+  return (await readErrorDetails(res, fallback)).message;
 }
 
 /**
@@ -141,8 +159,8 @@ function validate(form: ClientFormData): Record<string, string> {
   const result = clientSchema.safeParse({
     ...form,
     document: onlyDigits(form.document),
-    phone: onlyDigits(form.phone),
-    whatsapp: onlyDigits(form.whatsapp),
+    phone: normalizePhoneDigits(form.phone),
+    whatsapp: normalizePhoneDigits(form.whatsapp),
   });
 
   if (result.success) return {};
@@ -293,7 +311,11 @@ export function ClientesPageClient() {
       );
 
       if (!res.ok) {
-        setFormError(await readError(res, "Não foi possível salvar o cliente."));
+        const errDetails = await readErrorDetails(res, "Não foi possível salvar o cliente.");
+        if (Object.keys(errDetails.fields).length > 0) {
+          setFieldErrors(errDetails.fields);
+        }
+        setFormError(errDetails.message);
         setIsSubmitting(false);
         return;
       }

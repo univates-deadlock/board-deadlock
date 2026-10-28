@@ -186,10 +186,84 @@ export const createQuote = async (data: CreateQuoteInput, userId: string) => {
   });
 };
 
-// 6) ============= Update quote (notes / overall discount) =============
+// 6) ============= Update quote (notes / overall discount / items) =============
 export const updateQuote = async (id: string, data: UpdateQuoteInput) =>
   prisma.$transaction(async (tx) => {
     const quote = await getOpenQuoteOrThrow(tx, id);
+
+    if (data.items !== undefined) {
+      if (quote.status === "SENT" && data.items.length === 0) {
+        throw new AppError("Um orçamento enviado precisa ter pelo menos um item", 409);
+      }
+
+      const incomingIds = data.items
+        .map((item) => item.id)
+        .filter((itemId): itemId is string => itemId !== undefined);
+
+      if (new Set(incomingIds).size !== incomingIds.length) {
+        throw new AppError("Itens duplicados na atualização do orçamento", 400);
+      }
+
+      const existingItems = await tx.quoteItem.findMany({
+        where: { quoteId: id },
+        select: { id: true },
+      });
+      const existingIds = new Set(existingItems.map((item) => item.id));
+
+      for (const itemId of incomingIds) {
+        if (!existingIds.has(itemId)) {
+          throw new AppError("Item não encontrado neste orçamento", 404);
+        }
+      }
+
+      const preparedItems = data.items.map((item) => ({
+        id: item.id,
+        data: buildItemData(item),
+      }));
+
+      const effectiveDiscount =
+        data.discount === undefined ? quote.discount : toDecimal(data.discount);
+      const totals = calcQuoteTotals(
+        preparedItems.map((item) => item.data.subtotal),
+        effectiveDiscount
+      );
+
+      const retainedIdSet = new Set(incomingIds);
+      const idsToDelete = existingItems
+        .filter((item) => !retainedIdSet.has(item.id))
+        .map((item) => item.id);
+
+      if (idsToDelete.length > 0) {
+        await tx.quoteItem.deleteMany({
+          where: { id: { in: idsToDelete }, quoteId: id },
+        });
+      }
+
+      for (const prepared of preparedItems) {
+        if (prepared.id) {
+          await tx.quoteItem.update({
+            where: { id: prepared.id },
+            data: prepared.data,
+          });
+        } else {
+          await tx.quoteItem.create({
+            data: { quoteId: id, ...prepared.data },
+          });
+        }
+      }
+
+      await tx.quote.update({
+        where: { id },
+        data: {
+          ...(data.notes !== undefined && { notes: data.notes }),
+          subtotal: totals.subtotal,
+          discount: totals.discount,
+          total: totals.total,
+        },
+      });
+
+      return findQuoteDetail(tx, id);
+    }
 
     if (data.notes !== undefined) {
       await tx.quote.update({ where: { id }, data: { notes: data.notes } });

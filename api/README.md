@@ -224,8 +224,8 @@ Diferentemente de `/api/users`, as rotas de clientes recebem o **objeto JSON dir
 | `DELETE` | `/api/clients/:id` | `200` | Exclusão lógica equivalente a `deactivate`, retornando `{ "id", "active": false }`. |
 
 **Campos aceitos no body de `POST /api/clients` (e parcialmente em `PATCH /api/clients/:id`):**
-- Obrigatórios na criação: `type` (`"INDIVIDUAL"` ou `"COMPANY"`), `name` (`1..200` caracteres), `whatsapp` (`8..20` caracteres), `location` (`1..100` caracteres).
-- Opcionais / anuláveis (`null`): `document` (até `20` caracteres), `contactName` (até `200`), `phone` (até `20`), `email` (até `100`, normalizado para minúsculas; string vazia `""` é convertida em `null`; deve ser único entre clientes — `409` em duplicidade), `notes` (texto livre).
+- Obrigatórios na criação: `type` (`"INDIVIDUAL"` ou `"COMPANY"`), `name` (`1..200` caracteres), `whatsapp` (telefone fixo de 10 dígitos ou celular de 11 dígitos com DDD brasileiro válido; aceita máscara ou prefixo `+55` e persiste apenas dígitos), `location` (`1..100` caracteres).
+- Opcionais / anuláveis (`null`): `document` (CPF válido com dígitos verificadores para `INDIVIDUAL` ou CNPJ válido com dígitos verificadores para `COMPANY`; aceita máscara, converte `""` em `null` e persiste apenas dígitos), `contactName` (até `200`), `phone` (mesma validação de DDD + número brasileiro do `whatsapp`; `""` vira `null`), `email` (até `100`, normalizado para minúsculas; string vazia `""` é convertida em `null`; deve ser único entre clientes — `409` em duplicidade), `notes` (texto livre).
 
 ---
 
@@ -236,7 +236,7 @@ Diferentemente de `/api/users`, as rotas de clientes recebem o **objeto JSON dir
 | `GET` | `/api/quotes` | `200` | Lista orçamentos por `createdAt DESC, id ASC`. Aceita query params opcionais `?clientId=<uuid>&status=<DRAFT\|SENT\|APPROVED\|REJECTED\|EXPIRED>`. Cada registro inclui `client: { id, name, type }` e `_count: { items }`. |
 | `GET` | `/api/quotes/:id` | `200` / `404` | Retorna o orçamento completo com `client` e `items` ordenados por `createdAt ASC, id ASC`. |
 | `POST` | `/api/quotes` | `201` | Cria orçamento sempre em `status: "DRAFT"`, registrando `createdBy` a partir de `res.locals.user.id`. Exige cliente existente (`404`) e ativo (`409`). |
-| `PATCH` | `/api/quotes/:id` | `200` | Atualiza apenas `notes` e/ou `discount` geral (ao menos 1 campo) e recalcula os totais. Retorna o orçamento detalhado com `items`. |
+| `PATCH` | `/api/quotes/:id` | `200` | Atualiza atomicamente `notes`, `discount` geral e/ou a coleção `items` (mantendo itens com `id`, criando novos sem `id` e removendo os omitidos) e recalcula os totais. Retorna o orçamento detalhado com `items`. |
 | `DELETE` | `/api/quotes/:id` | `204` | **Exclusão física** do orçamento e de seus itens (`onDelete: Cascade`), permitida **apenas quando `status === "DRAFT"`** (`409` para outros status). |
 | `POST` | `/api/quotes/:id/items` | `201` | Adiciona um item ao orçamento, recalcula totais e retorna o orçamento completo. |
 | `PATCH` | `/api/quotes/:id/items/:itemId` | `200` | Atualiza parcialmente um item existente, recalcula totais e retorna o orçamento completo. |
@@ -413,14 +413,14 @@ npm run test:integration --prefix api
 
 ### Diferença entre testes unitários e de integração
 
-- **Testes unitários (`*.unit.test.ts`):** avaliam funções puras de regras de negócio (cálculos de itens e totais de orçamentos) em memória, sem depender de banco de dados ou Docker.
+- **Testes unitários (`*.unit.test.ts`):** avaliam funções puras de regras de negócio e validação (cálculos de itens/totais de orçamentos em R$ e dígitos verificadores de CPF/CNPJ + DDD/telefone brasileiro) em memória, sem depender de banco de dados ou Docker.
 - **Testes de integração (`*.integration.test.ts`):** validam requisições HTTP reais com Supertest contra o servidor Express, cobrindo autenticação por cookies com Better Auth, autorização por perfil (RBAC), validação com Zod e persistência real no PostgreSQL.
 
 ### Principais testes cobertos
 
 1. **Permissões (RBAC):** valida o controle de acesso por perfil (`ADMIN`, `PLANNING` e `TECHNICIAN`), comprovando que técnicos autenticados recebem HTTP `403 Forbidden` ao tentar operações de planejamento ou administrativas, e requisições anônimas recebem HTTP `401 Unauthorized`.
-2. **Cálculo de orçamentos:** valida as regras de `quote.calculations.ts` com tipos `Decimal` (quantidade × valor unitário, desconto de item, soma de subtotais, desconto geral, total líquido e rejeição de descontos superiores ao subtotal).
-3. **CRUD de orçamentos:** valida o ciclo de vida completo via HTTP e PostgreSQL real (criação de rascunho com itens e totais calculados no servidor, consulta do registro, atualização de dados, verificação da persistência, exclusão do rascunho e confirmação da exclusão com `404`).
+2. **Validação de clientes e CRUD (`client.validation.unit.test.ts` e `client.integration.test.ts`):** valida dígitos verificadores de CPF/CNPJ, compatibilidade entre `type` (`INDIVIDUAL`/`COMPANY`) e documento, DDD e formato de telefone/WhatsApp brasileiro (incluindo normalização de `+55`), além de criação, edição parcial e inativação lógica.
+3. **Cálculo e CRUD de orçamentos (`quote.calculations.unit.test.ts` e `quote.integration.test.ts`):** valida as regras de `quote.calculations.ts` com tipos `Decimal` em `R$` (quantidade × valor unitário, desconto de item em `R$`, soma de subtotais, desconto geral em `R$`, total líquido e rejeição de descontos superiores ao subtotal) e o ciclo completo via HTTP/PostgreSQL (criação em `DRAFT`, atualização atômica de cabeçalho e itens em `PATCH /api/quotes/:id` com rollback transacional em falhas e exclusão de rascunho).
 
 ### Banco descartável para integração
 

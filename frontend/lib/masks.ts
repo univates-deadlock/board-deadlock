@@ -49,8 +49,23 @@ export function maskDocument(value: string, kind: DocumentKind): string {
 }
 
 /** Landline (00) 0000-0000 or mobile (00) 00000-0000. */
+export function normalizePhoneDigits(value: string): string {
+  const trimmed = value.trim();
+  const raw = onlyDigits(trimmed);
+  if (trimmed.startsWith("+55") && raw.startsWith("55") && raw.length >= 12) {
+    return raw.slice(2, 13);
+  }
+  if (raw.length === 13 && raw.startsWith("55")) {
+    return raw.slice(2);
+  }
+  if (raw.length === 12 && raw.startsWith("55") && /^[2-5]/.test(raw[4] ?? "")) {
+    return raw.slice(2);
+  }
+  return raw.slice(0, 11);
+}
+
 export function maskPhone(value: string): string {
-  const d = digits(value, 11);
+  const d = normalizePhoneDigits(value);
   if (d.length === 0) return "";
   if (d.length <= 2) return `(${d}`;
   if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;

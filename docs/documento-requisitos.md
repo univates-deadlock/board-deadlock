@@ -154,8 +154,8 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 | **RF03** | O sistema deve restringir funcionalidades conforme os perfis de administrador, planejador e técnico. |
 | **RF04** | Usuários autorizados devem poder cadastrar, editar, consultar e inativar clientes pessoa física ou jurídica. |
 | **RF05** | Usuários de planejamento e administradores devem poder criar um orçamento vinculado a um cliente. |
-| **RF06** | Cada orçamento deve aceitar vários itens dos tipos produto, serviço ou outro, com descrição, quantidade, valor unitário e desconto. |
-| **RF07** | O sistema deve recalcular o valor total do orçamento a partir dos itens e descontos registrados. |
+| **RF06** | Cada orçamento deve aceitar vários itens dos tipos produto, serviço ou outro, com descrição, quantidade, valor unitário (R$) e desconto em reais (R$). |
+| **RF07** | O sistema deve recalcular o valor total do orçamento em reais (R$) a partir dos itens e dos descontos por item e geral registrados em R$. |
 | **RF08** | O orçamento pode ser editado apenas enquanto estiver em aberto; após aprovado, rejeitado ou expirado, seu conteúdo não pode ser alterado.   |
 | **RF09** | O sistema deve permitir registrar aprovação, rejeição ou expiração de um orçamento, com data, observação e evidência opcional. |
 | **RF10** | O sistema deve permitir criar serviço a partir de orçamento aprovado ou diretamente para um cliente. |
@@ -257,8 +257,8 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 1. Selecionar o cliente.
 2. Criar o orçamento e a primeira versão em estado RASCUNHO.
-3. Adicionar um ou mais itens, informando tipo, descrição, quantidade, preço unitário e desconto.
-4. O sistema recalcula subtotal e total.
+3. Adicionar um ou mais itens, informando tipo, descrição, quantidade, preço unitário (R$) e desconto em reais (R$), além de desconto geral opcional em reais (R$).
+4. O sistema recalcula subtotal e total em R$.
 5. Usuário salva e, quando pronta, marca como enviada.
 6. Se o cliente pedir alteração, o usuário altera a versão anterior, até que a mesma seja aprovada, rejeitada ou expirada. 
 
@@ -271,7 +271,7 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 - **RN-ORC-01:** o ID é único dentro de cada orçamento.  
 - **RN-ORC-02:** um orçamento enviado e decidido é imutável quanto a seus itens e valores.  
-- **RN-ORC-03:** o total do orçamento é derivado de itens/descontos e não é digitado livremente.  
+- **RN-ORC-03:** o total do orçamento é derivado de itens e descontos (todos expressos em R$) e não é digitado livremente.
 - **RN-ORC-04:** cada item deve ser classificado como produto, serviço ou outro.
 
 ### UC04 - Registrar decisão do orçamento

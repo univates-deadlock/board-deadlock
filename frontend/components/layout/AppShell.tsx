@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import type { SessionUser } from "@/lib/auth-server";
 
 /**
  * Authenticated application shell: persistent sidebar + header + content area.
@@ -11,12 +12,19 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
  * The sidebar is always visible on desktop (lg) and slides in on mobile
  * via a state toggle in the header.
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  user,
+  children,
+}: {
+  user: SessionUser;
+  children: React.ReactNode;
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-1 bg-tp-neutral-50">
       <AppSidebar
+        user={user}
         mobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
       />
