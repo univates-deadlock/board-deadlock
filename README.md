@@ -83,6 +83,11 @@ comandos abaixo; os arquivos preexistentes nela foram preservados.
 
 ## Primeiro acesso: configurar o ambiente
 
+> Para executar a stack pelo Docker Compose ou preparar a VM, consulte
+> [Deploy e arquivos de ambiente](docs/deploy.md). O projeto usa dois arquivos
+> não versionados: `.env` na raiz (Compose/PostgreSQL/URLs) e `api/.env`
+> (segredo Better Auth). Os arquivos `.env.example` são apenas modelos.
+
 Clone o repositório, entre na raiz e instale as dependências:
 
 ```bash
@@ -134,9 +139,10 @@ administrador, abra outro terminal e siga
 | PostgreSQL | localhost:5432 |
 
 Dentro do Compose, a API usa `db:5432`; no host, a URL do banco usa `localhost`.
-Por padrão, o banco permanece restrito a `127.0.0.1:5432`, enquanto o frontend e a
-API publicam em `0.0.0.0` nas portas 3000 e 4000. Dependências, cliente Prisma e cache do
-Next.js usam volumes próprios, evitando alterações de propriedade no host.
+Por padrão, o banco, o frontend e a API publicam portas no loopback (`127.0.0.1`).
+Na VM, o Caddy central disponibiliza frontend e API em `https://app.matbdev.com`.
+Dependências, cliente Prisma e cache do Next.js usam volumes próprios,
+evitando alterações de propriedade no host.
 
 ```bash
 docker compose ps
@@ -153,10 +159,10 @@ e a URL pública da API no frontend apontem automaticamente para o endereço de 
 
 ## Deploy automático e Copilot
 
-Após o CI passar para um push na `main`, o GitHub Actions pode atualizar a VM
-por SSH e executar o Compose, aguardando a saúde dos serviços sem pausa fixa.
-Configure o clone da VM e os secrets conforme o [guia de deploy](docs/deploy.md).
-O guia também explica as instruções e as duas skills disponibilizadas ao Copilot.
+O CD é orquestrado pelo repositório privado `univates-deadlock/deadlock-deploy`,
+cujo runner self-hosted executa o Docker Compose diretamente na VM. O fluxo
+manual usa Actions → Deploy Deadlock → `app`. A automatização após CI aprovado
+na `main` depende do workflow de notificação central. Veja [o guia](docs/deploy.md).
 
 ## Como entender a implementação
 
