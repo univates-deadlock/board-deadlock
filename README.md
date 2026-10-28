@@ -21,20 +21,6 @@ A **TechPro** atua em segurança eletrônica e automação residencial, comercia
 
 ## 2. Equipe e referências
 
-| Critério | Pontos | Evidência para apresentar |
-| --- | --- | --- |
-| Autenticação e sessão | 2,5 | login, consulta da sessão e logout |
-| Dois CRUDs | 3,0 | fluxos de cadastro, consulta, edição e exclusão |
-| Site minimamente funcional | 2,0 | página institucional conforme Figma |
-| README de execução | 0,5 | instalação e execução reproduzíveis |
-| Processo e robustez | 2,0 | divisão de tarefas, Git, validação e erros |
-
-Testes automatizados foram retirados do escopo original da Parcial 1. A API foi verificada
-funcionalmente por HTTP com PostgreSQL separado e dados fictícios. O CI e
-`npm run check` executam lint, tipos e build, sem exigir suíte de testes.
-
-## Equipe e referências
-
 - [Alexandra Padilha](https://github.com/alexandrapadilha1)
 - [Diogo Felipe Zanco](https://github.com/DiogoFZanco)
 - [Mateus Carniel Brambilla](https://github.com/matbdev)
@@ -117,9 +103,7 @@ As tabelas e enums abaixo já existem em [`api/prisma/schema.prisma`](api/prisma
 - Endpoints e interface para envio de orçamento (`DRAFT → SENT`), decisão (`APPROVED`, `REJECTED`, `EXPIRED`) e upload de evidências.
 - Módulos completos de serviços, agendamento de visitas, atribuição/agenda de técnicos, garantias, revisões e alertas operacionais internos.
 - Alteração e recuperação de senha de usuários.
-- Página institucional pública prevista nos protótipos iniciais.
 - Módulo opcional de acompanhamento manual de licitações.
-- Integração da suíte de testes automatizados na branch `main` (em desenvolvimento paralelo na branch `feat/refining-tests`).
 
 ---
 
@@ -311,8 +295,13 @@ npm run db:migrate --prefix api
 
 ### Situação atual dos testes automatizados
 
-- Na branch `main`, o pacote `api` já possui o script `npm test --prefix api` (`vitest run`) com `vitest` e `supertest` configurados nas dependências de desenvolvimento, além de coleções de requisições manuais em [`api/tests/client.http`](api/tests/client.http) e [`api/tests/quote.http`](api/tests/quote.http).
-- A suíte de testes automatizados está sendo desenvolvida separadamente na branch `feat/refining-tests` e **ainda não está integrada à `main`** nem ao comando `npm run check` / workflow `CI`. Esta seção e o guia da API serão atualizados assim que a branch de testes for revisada e mesclada.
+- A suíte de testes automatizados da API foi integrada à branch `main` pelo PR #54 e é executada automaticamente no workflow `CI` do GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+- A suíte contempla testes unitários (`*.unit.test.ts`) para regras de negócio e validações em memória, e testes de integração (`*.integration.test.ts`) com Supertest e banco PostgreSQL descartável gerenciado automaticamente no Docker.
+- Comandos de execução:
+  - `npm test --prefix api` — executa toda a suíte (unitários e de integração).
+  - `npm run test:unit --prefix api` — executa apenas os testes unitários (não requer Docker nem banco).
+  - `npm run test:integration --prefix api` — executa apenas os testes de integração (requer Docker para o banco isolado).
+  - Detalhes e especificações completas estão disponíveis no [guia da API](api/README.md#testes-automatizados).
 
 ---
 
@@ -320,22 +309,16 @@ npm run db:migrate --prefix api
 
 O fluxo de integração e entrega contínua está dividido entre este repositório e o orquestrador privado de infraestrutura da equipe (`univates-deadlock/deadlock-deploy`):
 
-1. **Integração Contínua (`CI`):** em cada `push` ou `pull_request`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) valida schema/client Prisma, ESLint, TypeScript e build da API e do frontend em Node.js 24.
+1. **Integração Contínua (`CI`):** em cada `push` ou `pull_request`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) valida schema/client Prisma, ESLint, TypeScript, build e executa a suíte de testes automatizados (`npm test`) no job da API em Node.js 24.
 2. **Notificação de CD (`Notify central CD`):** quando o workflow `CI` conclui com sucesso após um `push` na branch `main`, [`.github/workflows/notify-deploy.yml`](.github/workflows/notify-deploy.yml) dispara um evento `repository_dispatch` (`deploy-main`) para `univates-deadlock/deadlock-deploy`.
 3. **Implantação via runner self-hosted:** o runner self-hosted instalado na VM da Univates recebe o job diretamente do GitHub via HTTPS (sem depender de SSH de entrada vindo dos runners hospedados pelo GitHub), atualiza o checkout em `~/techpro-app`, executa `docker compose up -d --build` e valida os healthchecks locais.
 4. **Publicação HTTPS:** o Caddy central (mantido em `deadlock-deploy`) publica a aplicação em `https://app.matbdev.com` através da rede Docker `deadlock_edge`.
 
-> **Pendência técnica conhecida:** o workflow legado de deploy via SSH ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) ainda permanece versionado com gatilhos `push` (`main`) e `workflow_dispatch` ativos, devendo ser desativado em tarefa específica de infraestrutura. Consulte todos os detalhes operacionais em [`docs/deploy.md`](docs/deploy.md).
+> **Workflow SSH legado — desativado:** o workflow anterior de deploy via SSH ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) encontra-se desativado no GitHub Actions, substituído pelo fluxo centralizado via runner self-hosted e Caddy (`deadlock-deploy`). Consulte todos os detalhes operacionais em [`docs/deploy.md`](docs/deploy.md).
 
 ---
 
 ## 13. Roteiro de apoio para demonstração acadêmica (Parcial 2)
-`check` executa lint, verificação TypeScript e build de ambas as aplicações.
-`npm test --prefix api` executa a suíte de testes unitários e de integração com Vitest e
-Supertest, integrada ao CI. A integração usa um PostgreSQL descartável no Docker; os
-testes de cálculo rodam sem Docker. Veja os comandos e detalhes no
-[guia da API](api/README.md#testes-automatizados). Builds do frontend
-podem precisar de rede para baixar as fontes configuradas em `next/font/google`.
 
 Para conduzir a apresentação técnica do projeto de forma alinhada ao código atual:
 

@@ -13,7 +13,7 @@ A arquitetura operacional atual divide a validação de código (neste repositó
         │
         ▼
 2. GitHub Actions: workflow "CI" (.github/workflows/ci.yml)
-        ├─ Job API: npm ci → db:validate → db:generate → lint → typecheck → build
+        ├─ Job API: npm ci → db:validate → db:generate → lint → typecheck → build → npm test
         └─ Job Frontend: npm ci → lint → typecheck → build
         │
         ▼  (somente em push na branch main com conclusão "success")
@@ -43,8 +43,8 @@ A arquitetura operacional atual divide a validação de código (neste repositó
 
 1. **Desenvolvimento e envio de alterações:** o desenvolvimento ocorre em branches temáticas integradas via Pull Request para a `main`.
 2. **Execução do CI (`.github/workflows/ci.yml`):** acionado em todo `push` e `pull_request` em runners `ubuntu-latest` com Node.js 24.
-3. **Validação de lint, tipos e build:**
-   - **Job `API`:** instala dependências (`npm ci`), valida o schema Prisma (`db:validate`), gera o cliente Prisma (`db:generate`) e executa `lint`, `typecheck` e `build`.
+3. **Validação de lint, tipos, build e testes:**
+   - **Job `API`:** instala dependências (`npm ci`), valida o schema Prisma (`db:validate`), gera o cliente Prisma (`db:generate`), executa `lint`, `typecheck`, `build` e roda a suíte de testes automatizados (`npm test`).
    - **Job `Frontend`:** instala dependências (`npm ci`) e executa `lint`, `typecheck` e `build`.
 4. **Notificação após CI aprovado na `main` (`.github/workflows/notify-deploy.yml`):** acionado por `workflow_run` ao término do workflow `CI`. O job `notify` executa **exclusivamente** quando todas as condições são atendidas: `conclusion == 'success'`, `event == 'push'`, `head_branch == 'main'` e repositório `univates-deadlock/techpro-app` (resultados de Pull Requests nunca disparam deploy).
 5. **Comunicação com `univates-deadlock/deadlock-deploy`:** utilizando o segredo organizacional `DEPLOY_DISPATCH_TOKEN`, o workflow envia `POST https://api.github.com/repos/univates-deadlock/deadlock-deploy/dispatches` com `event_type: "deploy-main"` e `client_payload: { repository, sha }` (esperando HTTP `204`). Também é possível acionar o deploy manualmente em **`deadlock-deploy` → Actions → Deploy Deadlock** selecionando o alvo `app`.
@@ -77,13 +77,13 @@ docker network inspect deadlock_edge >/dev/null 2>&1 || docker network create de
 
 ---
 
-## 3. Pendência técnica: workflow SSH legado (`.github/workflows/deploy.yml`)
+## 3. Workflow SSH legado — desativado (`.github/workflows/deploy.yml`)
 
 O arquivo [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) (`Deploy TechPro App`) corresponde à implementação anterior de deploy por SSH direto a partir de `ubuntu-latest` (exigindo os segredos `VM_HOST`, `VM_USER`, `VM_PORT`, `VM_SSH_KEY` e `VM_KNOWN_HOSTS`).
 
-**Estado atual verificado no código:**
-- O workflow legado **ainda não foi desativado ou removido** e mantém gatilhos ativos em `on.push.branches: [main]` e `on.workflow_dispatch`.
-- **Pendência técnica registrada:** desativar o gatilho automático em `push` ou remover `.github/workflows/deploy.yml` em PR dedicado de infraestrutura, evitando execuções redundantes, falhas de action por ausência de segredos SSH ou concorrência com o runner self-hosted do `deadlock-deploy`.
+**Estado atual:**
+- O workflow legado encontra-se **desativado no GitHub Actions**, evitando execuções redundantes, falhas por ausência de segredos SSH ou concorrência com o runner self-hosted do `deadlock-deploy`.
+- O arquivo permanece no repositório como registro histórico. Toda a implantação contínua da branch `main` é realizada exclusivamente pelo pipeline central via `Notify central CD` e runner self-hosted.
 
 ---
 
