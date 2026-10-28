@@ -7,11 +7,11 @@ Aplicação web interna construída com **Next.js 16 (App Router)**, **React 19*
 ## Funcionalidades implementadas no frontend
 
 - **Autenticação (`/login`):** validação local com Zod, bloqueio contra duplo envio, tratamento distinto para credenciais inválidas (`400`/`401`), usuário inativo (`403`), excesso de tentativas (`429`) e indisponibilidade da API, acessibilidade por teclado (`aria-invalid`, `aria-describedby`, `role="alert"`) e layout responsivo (painel institucional lateral a partir de `1024px` e banner compacto em telas menores).
-- **Shell autenticado (`app/(protected)/layout.tsx`):** verificação de sessão ativa no servidor via `requireActiveSession()` antes de renderizar qualquer rota interna, barra lateral responsiva (`AppSidebar`) com ocultação visual de "Usuários" para perfis não administradores e cabeçalho (`AppHeader`) com encerramento de sessão.
-- **Dashboard operacional (`/`):** indicadores de orçamentos ("Em aberto", "Aguardando decisão", "Rascunhos" e "Valor em aberto"), lista de orçamentos pendentes e resumo por status calculados no cliente a partir de `GET /api/quotes` (não há endpoint dedicado de dashboard). Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a entrega desses módulos.
+- **Shell autenticado (`app/(protected)/layout.tsx`):** verificação de sessão ativa no servidor via `requireActiveSession()` antes de renderizar qualquer rota interna, barra lateral responsiva (`AppSidebar`) que filtra itens conforme o perfil da sessão SSR (`Usuários` visível apenas para `ADMIN`; `Clientes`, `Orçamentos`, `Garantias` e `Revisões` visíveis apenas para `ADMIN` e `PLANNING`), proteção SSR por rota via `requireRoleSession()` (redirecionando perfis não autorizados para `/`) e cabeçalho (`AppHeader`) com encerramento de sessão.
+- **Dashboard operacional (`/`):** para `ADMIN` e `PLANNING` (`DashboardQuotesView`), exibe indicadores de orçamentos ("Em aberto", "Aguardando decisão", "Rascunhos" e "Valor em aberto"), lista de orçamentos pendentes e resumo por status calculados no cliente a partir de `GET /api/quotes`; para `TECHNICIAN`, renderiza apenas o painel operacional de serviços/visitas sem consultar `/api/quotes`. Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a entrega desses módulos.
 - **Gestão de usuários (`/usuarios`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil (sem alteração de senha) e ativação/desativação em modal acessível (`ADMIN`).
-- **Gestão de clientes (`/clientes`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição com máscaras de CPF/CNPJ e telefone/WhatsApp (enviando apenas dígitos para a API) e ativação/inativação (`ADMIN` e `PLANNING`).
-- **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição de observações, desconto geral e sincronização individual de itens (`syncQuoteItems`), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada somente leitura (`/orcamentos/[id]`) com itens, resumo financeiro e histórico (`ADMIN` e `PLANNING`).
+- **Gestão de clientes (`/clientes`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição com máscaras e validação de dígitos verificadores de CPF/CNPJ e DDD/telefone brasileiro (enviando apenas dígitos para a API) e ativação/inativação (`ADMIN` e `PLANNING`).
+- **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição atômica de observações, desconto geral em `R$` e itens com desconto em `R$` (em `/orcamentos` e `/orcamentos/[id]` enquanto em aberto), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada (`/orcamentos/[id]`) com itens, resumo financeiro discriminando descontos por item e desconto geral em `R$`, e histórico (`ADMIN` e `PLANNING`).
 - **Seções em desenvolvimento (`/servicos`, `/garantias`, `/revisoes`):** renderizam o componente `DevPage` até que os respectivos endpoints sejam implementados na API.
 
 > **Autorização:** ocultar itens de navegação ou botões melhora a experiência de uso, mas o controle de acesso efetivo ocorre no backend (`401`/`403`).
@@ -42,8 +42,8 @@ Acesse `http://localhost:3000`. Os scripts `dev` e `build` utilizam explicitamen
 
 ## Sessão, chamadas à API e precisão monetária
 
-1. **Proteção SSR (`lib/auth-server.ts`):** `app/(protected)/layout.tsx` executa `requireActiveSession()` no servidor, encaminhando o cabeçalho `cookie` para `GET /api/auth/get-session` com `cache: "no-store"`. Sessões ausentes, inválidas ou com `isActive !== true` redirecionam imediatamente para `/login`; se a API estiver inacessível, o layout falha fechado sem exibir dados internos.
-2. **Cliente de autenticação no navegador (`lib/auth-client.ts`):** instancia `createAuthClient` do Better Auth com `credentials: "include"` para login, consulta de sessão no menu lateral e logout.
+1. **Proteção SSR (`lib/auth-server.ts`):** `app/(protected)/layout.tsx` executa `requireActiveSession()` no servidor, encaminhando o cabeçalho `cookie` para `GET /api/auth/get-session` com `cache: "no-store"`. Sessões ausentes, inválidas ou com `isActive !== true` redirecionam imediatamente para `/login`; páginas restritas a perfis específicos chamam `requireRoleSession()`, redirecionando acessos sem permissão para `/`. Se a API estiver inacessível, o layout falha fechado sem exibir dados internos.
+2. **Cliente de autenticação no navegador (`lib/auth-client.ts`):** instancia `createAuthClient` do Better Auth com `credentials: "include"` para login e logout.
 3. **Chamadas aos CRUDs:** todas as requisições `fetch` para `/api/users`, `/api/clients` e `/api/quotes` enviam `credentials: "include"`. Erros das rotas de autenticação expõem `message`; erros dos CRUDs seguem `{ error, fields? }`.
 4. **Valores monetários (`lib/quotes.ts` e `lib/money.ts`):** a API serializa colunas `Decimal` do Prisma como strings; `lib/quotes.ts` converte esses valores para **centavos inteiros** na fronteira de entrada, evitando erros de ponto flutuante na interface.
 
@@ -67,11 +67,12 @@ frontend/
 │       ├── orcamentos/             # Listagem/formulário e detalhe (/orcamentos/[id])
 │       └── servicos|garantias|revisoes/  # Placeholders DevPage
 ├── components/
+│   ├── dashboard/                  # DashboardQuotesView (visão comercial de orçamentos)
 │   ├── layout/                     # AppShell, AppSidebar, AppHeader e DevPage
 │   ├── login/                      # LoginBrandPanel e LoginForm
 │   ├── usuarios/                   # UsuariosPageClient
 │   ├── clientes/                   # ClientesPageClient
-│   ├── orcamentos/                 # OrcamentosPageQuote e QuoteDetailPageClient
+│   ├── orcamentos/                 # OrcamentosPageQuote, QuoteFormModal e QuoteDetailPageClient
 │   └── ui/                         # Alert, Badge, Button, Card, Field, Modal, PageHeader e ícones
 └── lib/                            # auth-client, auth-server, quotes, money, masks e schemas
 ```

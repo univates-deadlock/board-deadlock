@@ -88,8 +88,8 @@ A classificação abaixo reflete exclusivamente o que está implementado no cód
 
 - **Autenticação e gerenciamento de sessão:** login com e-mail e senha (`/login`), persistência de sessão no PostgreSQL com cookie HTTP-only, validação SSR de sessão ativa nas rotas internas, bloqueio de usuários inativos e logout. Provisionamento local do primeiro administrador via script `admin:create`.
 - **Gestão de usuários (`/usuarios` e `/api/users`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil, ativação e desativação lógica (`isActive`), com revogação automática de sessões e proteção contra remoção ou desativação do próprio usuário ou do último administrador ativo.
-- **Gestão de clientes (`/clientes` e `/api/clients`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição de clientes Pessoa Física (`INDIVIDUAL`) e Pessoa Jurídica (`COMPANY`) com máscaras de documento e telefone, validação de unicidade de e-mail, ativação e inativação lógica (`active`).
-- **Gestão de orçamentos e itens em elaboração (`/orcamentos`, `/orcamentos/[id]` e `/api/quotes`):** listagem com busca local e filtro por status, visualização detalhada com resumo financeiro e histórico, criação de orçamento em rascunho (`DRAFT`) vinculado a cliente ativo, adição/edição/remoção de itens (`PRODUCT`, `SERVICE`, `OTHER`), atualização de observações e desconto geral, recálculo exato no servidor com `Decimal(12, 2)` e exclusão física restrita a rascunhos (`DRAFT`).
+- **Gestão de clientes (`/clientes` e `/api/clients`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição de clientes Pessoa Física (`INDIVIDUAL`) e Pessoa Jurídica (`COMPANY`) com máscaras e validação de dígitos verificadores de CPF/CNPJ e DDD/telefone brasileiro, validação de unicidade de e-mail, ativação e inativação lógica (`active`).
+- **Gestão de orçamentos e itens em elaboração (`/orcamentos`, `/orcamentos/[id]` e `/api/quotes`):** listagem com busca local e filtro por status, visualização detalhada com resumo financeiro (discriminando descontos por item e desconto geral em `R$`) e histórico, criação de orçamento em rascunho (`DRAFT`) vinculado a cliente ativo, edição atômica de observações, desconto geral (`R$`) e itens (`PRODUCT`, `SERVICE`, `OTHER`, com desconto por item em `R$`), recálculo exato no servidor com `Decimal(12, 2)` e exclusão física restrita a rascunhos (`DRAFT`).
 
 ### 5.2 Implementadas apenas no backend
 
@@ -99,8 +99,8 @@ A classificação abaixo reflete exclusivamente o que está implementado no cód
 ### 5.3 Parcialmente implementadas
 
 - **Ciclo de decisão do orçamento:** o modelo de dados e as regras de proteção da API já distinguem orçamentos em aberto (`DRAFT`, `SENT`) de orçamentos decididos (`APPROVED`, `REJECTED`, `EXPIRED`), porém **ainda não existem endpoints nem ações na interface** para marcar um orçamento como enviado, registrar aprovação/rejeição/expiração ou anexar arquivo de evidência.
-- **Dashboard operacional (`/`):** apresenta cartões de indicadores ("Em aberto", "Aguardando decisão", "Rascunhos", "Valor em aberto"), lista de orçamentos pendentes e contagem por status calculados a partir de `GET /api/quotes`. Os painéis de "Próximos serviços e visitas" e "Revisões e garantias" exibem avisos estáticos aguardando a implementação desses módulos.
-- **Experiência do perfil `TECHNICIAN`:** o perfil é autenticado e devidamente bloqueado pela API (`403`) nos módulos administrativos e comerciais, mas ainda não dispõe de endpoints próprios nem telas de agenda/execução; ao acessar `/` (que consome `/api/quotes`), o técnico recebe mensagem de acesso negado.
+- **Dashboard operacional (`/`):** para `ADMIN` e `PLANNING`, apresenta cartões de indicadores ("Em aberto", "Aguardando decisão", "Rascunhos", "Valor em aberto"), lista de orçamentos pendentes e contagem por status calculados a partir de `GET /api/quotes`; para `TECHNICIAN`, exibe apenas o painel operacional de serviços/visitas sem requisitar dados comerciais restritos. Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a implementação desses módulos.
+- **Experiência do perfil `TECHNICIAN`:** o perfil é autenticado e devidamente bloqueado pela API (`403`) nos módulos administrativos e comerciais. Na interface, páginas restritas (`Clientes`, `Orçamentos`, `Garantias`, `Revisões` e `Usuários`) são ocultadas na barra lateral e redirecionam para `/` no servidor (`requireRoleSession`) caso acessadas por URL direta, restando implementar seus endpoints e telas próprias de agenda/execução.
 
 ### 5.4 Apenas modeladas no banco de dados
 
@@ -131,7 +131,7 @@ Toda autorização real é validada no backend a partir da sessão verificada (`
 | --- | --- | --- |
 | `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. |
 | `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. Recebe `403` em `/api/users` (link "Usuários" oculto na barra lateral). |
-| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno, porém recebe `403` em `/api/users`, `/api/clients` e `/api/quotes`. Suas funcionalidades operacionais (agenda e registro de visitas) pertencem às próximas entregas. |
+| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/servicos`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` em `/api/users`, `/api/clients` e `/api/quotes`. Suas funcionalidades operacionais (agenda e registro de visitas) pertencem às próximas entregas. |
 
 ---
 

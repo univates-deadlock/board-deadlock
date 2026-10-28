@@ -2,9 +2,9 @@
 
 Módulos compartilhados pelas telas e layouts do frontend:
 
-- `auth-client.ts`: cliente Better Auth para React (`NEXT_PUBLIC_API_URL` com fallback `http://localhost:4000` e `credentials: "include"`), usado em Client Components para login, leitura de sessão e logout.
-- `auth-server.ts`: helper servidor `requireActiveSession()` usado por `app/(protected)/layout.tsx` para validar o cookie recebido junto a `GET /api/auth/get-session` (via `API_INTERNAL_URL` ou `NEXT_PUBLIC_API_URL`) sem cache.
-- `quotes.ts`: camada de acesso aos endpoints `/api/quotes` (listagem, detalhe, criação, atualização de observações/desconto, sincronização individual de itens via `syncQuoteItems` e exclusão de rascunhos), convertendo `Decimal` serializado pela API em centavos inteiros.
+- `auth-client.ts`: cliente Better Auth para React (`NEXT_PUBLIC_API_URL` com fallback `http://localhost:4000` e `credentials: "include"`), usado em Client Components para login e logout.
+- `auth-server.ts`: helpers servidores `requireActiveSession()` e `requireRoleSession()` usados por `app/(protected)/` para validar o cookie recebido junto a `GET /api/auth/get-session` (via `API_INTERNAL_URL` ou `NEXT_PUBLIC_API_URL`) sem cache e restringir rotas por perfil.
+- `quotes.ts`: camada de acesso aos endpoints `/api/quotes` (listagem, detalhe, criação, atualização atômica de observações/desconto/itens, sincronização auxiliar de itens via `syncQuoteItems` e exclusão de rascunhos), convertendo `Decimal` serializado pela API em centavos inteiros.
 - `money.ts`: formatação e parsing de valores em reais (sempre baseados em centavos inteiros), quantidades e datas em `pt-BR`.
 - `masks.ts`: máscaras de digitação para CPF, CNPJ e telefone/WhatsApp, além de extração de dígitos para envio à API.
 - `schemas.ts`: schemas Zod espelhados da API para feedback imediato nos formulários de login, usuários, clientes e orçamentos.
