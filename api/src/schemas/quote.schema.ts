@@ -47,6 +47,11 @@ export const updateQuoteItemSchema = z
 export const quoteIdSchema = z.string().trim().uuid("Identificador do orçamento inválido");
 export const quoteItemIdSchema = z.string().trim().uuid("Identificador do item inválido");
 
+export const syncQuoteItemSchema = z.strictObject({
+  id: quoteItemIdSchema.optional(),
+  ...quoteItemFields,
+});
+
 export const createQuoteSchema = z.strictObject({
   clientId: z.string().trim().uuid("Identificador do cliente inválido"),
   notes: z.string().trim().nullable().optional(),
@@ -58,6 +63,10 @@ export const updateQuoteSchema = z
   .strictObject({
     notes: z.string().trim().nullable().optional(),
     discount: money("Desconto geral").optional(),
+    items: z
+      .array(syncQuoteItemSchema)
+      .max(MAX_QUOTE_ITEMS, "Máximo de 100 itens por orçamento")
+      .optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

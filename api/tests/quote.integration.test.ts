@@ -213,5 +213,114 @@ describe("Quote integration tests", () => {
         })
         .expect(404);
     });
+
+    it("atomically updates items, notes, and discounts via PATCH /api/quotes/:id", async () => {
+      const createResponse = await agentWithCookie(admin.cookie)
+        .post("/api/quotes")
+        .send({
+          clientId,
+          notes: "Proposta v1",
+          discount: 0,
+          items: [
+            {
+              type: "SERVICE",
+              description: "Instalação básica",
+              quantity: 1,
+              unitPrice: 100,
+              discount: 10,
+            },
+            {
+              type: "PRODUCT",
+              description: "Item para remover",
+              quantity: 1,
+              unitPrice: 50,
+              discount: 0,
+            },
+          ],
+        })
+        .expect(201);
+
+      const quoteId = createResponse.body.id as string;
+      const firstItemId = createResponse.body.items[0].id as string;
+
+      // Update first item to higher value, drop second item, add new item, and raise general discount above old subtotal (140 -> 200)
+      const patchResponse = await agentWithCookie(admin.cookie)
+        .patch(`/api/quotes/${quoteId}`)
+        .send({
+          notes: "Proposta v2 revisada",
+          discount: 200,
+          items: [
+            {
+              id: firstItemId,
+              type: "SERVICE",
+              description: "Instalação completa",
+              quantity: 2,
+              unitPrice: 250,
+              discount: 50,
+            },
+            {
+              type: "PRODUCT",
+              description: "Central de alarme",
+              quantity: 1,
+              unitPrice: 400,
+              discount: 25,
+            },
+          ],
+        })
+        .expect(200);
+
+      // (2 * 250 - 50) + (1 * 400 - 25) = 450 + 375 = 825; total = 825 - 200 = 625
+      expect(patchResponse.body.notes).toBe("Proposta v2 revisada");
+      expect(patchResponse.body.subtotal).toBe("825");
+      expect(patchResponse.body.discount).toBe("200");
+      expect(patchResponse.body.total).toBe("625");
+      expect(patchResponse.body.items).toHaveLength(2);
+      expect(patchResponse.body.items[0].id).toBe(firstItemId);
+      expect(patchResponse.body.items[0].description).toBe("Instalação completa");
+      expect(patchResponse.body.items[0].discount).toBe("50");
+      expect(patchResponse.body.items[1].description).toBe("Central de alarme");
+      expect(patchResponse.body.items[1].discount).toBe("25");
+    });
+
+    it("rolls back atomic quote edit when discount exceeds updated items subtotal", async () => {
+      const createResponse = await agentWithCookie(admin.cookie)
+        .post("/api/quotes")
+        .send({
+          clientId,
+          notes: "Intacto",
+          discount: 10,
+          items: [sampleItem],
+        })
+        .expect(201);
+
+      const quoteId = createResponse.body.id as string;
+      const itemId = createResponse.body.items[0].id as string;
+
+      await agentWithCookie(admin.cookie)
+        .patch(`/api/quotes/${quoteId}`)
+        .send({
+          notes: "Não deve persistir",
+          discount: 500,
+          items: [
+            {
+              id: itemId,
+              type: "SERVICE",
+              description: "Alterado",
+              quantity: 1,
+              unitPrice: 200,
+              discount: 0,
+            },
+          ],
+        })
+        .expect(422);
+
+      const persisted = await agentWithCookie(admin.cookie)
+        .get(`/api/quotes/${quoteId}`)
+        .expect(200);
+
+      expect(persisted.body.notes).toBe("Intacto");
+      expect(persisted.body.discount).toBe("10");
+      expect(persisted.body.items[0].description).toBe("Instalação de equipamento");
+    });
   });
 });
