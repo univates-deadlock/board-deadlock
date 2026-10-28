@@ -21,7 +21,21 @@ A **TechPro** atua em segurança eletrônica e automação residencial, comercia
 
 ## 2. Equipe e referências
 
-- [Alexandra König Padilha](https://github.com/alexandrapadilha1)
+| Critério | Pontos | Evidência para apresentar |
+| --- | --- | --- |
+| Autenticação e sessão | 2,5 | login, consulta da sessão e logout |
+| Dois CRUDs | 3,0 | fluxos de cadastro, consulta, edição e exclusão |
+| Site minimamente funcional | 2,0 | página institucional conforme Figma |
+| README de execução | 0,5 | instalação e execução reproduzíveis |
+| Processo e robustez | 2,0 | divisão de tarefas, Git, validação e erros |
+
+Testes automatizados foram retirados do escopo original da Parcial 1. A API foi verificada
+funcionalmente por HTTP com PostgreSQL separado e dados fictícios. O CI e
+`npm run check` executam lint, tipos e build, sem exigir suíte de testes.
+
+## Equipe e referências
+
+- [Alexandra Padilha](https://github.com/alexandrapadilha1)
 - [Diogo Felipe Zanco](https://github.com/DiogoFZanco)
 - [Mateus Carniel Brambilla](https://github.com/matbdev)
 - [Tainá Luiza Schmidt](https://github.com/TainaSchmidt)
@@ -316,6 +330,12 @@ O fluxo de integração e entrega contínua está dividido entre este repositór
 ---
 
 ## 13. Roteiro de apoio para demonstração acadêmica (Parcial 2)
+`check` executa lint, verificação TypeScript e build de ambas as aplicações.
+`npm test --prefix api` executa a suíte de testes unitários e de integração com Vitest e
+Supertest, integrada ao CI. A integração usa um PostgreSQL descartável no Docker; os
+testes de cálculo rodam sem Docker. Veja os comandos e detalhes no
+[guia da API](api/README.md#testes-automatizados). Builds do frontend
+podem precisar de rede para baixar as fontes configuradas em `next/font/google`.
 
 Para conduzir a apresentação técnica do projeto de forma alinhada ao código atual:
 
