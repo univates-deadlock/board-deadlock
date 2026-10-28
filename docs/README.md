@@ -23,12 +23,12 @@ Resumo auditado da branch `main`, distinguindo a entrega real do escopo planejad
 | Categoria | Módulos / recursos | Referência técnica |
 | --- | --- | --- |
 | **Implementada e integrada ao frontend** | Autenticação/sessão (Better Auth + proteção SSR), CRUD de usuários (`/usuarios`), CRUD de clientes (`/clientes`) e CRUD de orçamentos e itens em rascunho/elaboração (`/orcamentos` e `/orcamentos/[id]`). | [`../README.md`](../README.md), [`../api/README.md`](../api/README.md), [`../frontend/README.md`](../frontend/README.md) |
-| **Implementada apenas no backend** | Health check (`GET /api/health`), filtros de query em `GET /api/quotes` (`clientId`, `status`), busca individual por ID em usuários e clientes e rotas `DELETE` lógicas equivalentes a `deactivate`. | [`../api/README.md`](../api/README.md) |
+| **Implementada apenas no backend** | Health check (`GET /api/health`), filtros de query em `GET /api/quotes` (`clientId`, `status`), busca individual por ID em usuários e clientes, rotas `DELETE` lógicas equivalentes a `deactivate` e suíte de testes automatizados da API. | [`../api/README.md`](../api/README.md), [`../api/tests/`](../api/tests/) |
 | **Parcialmente implementada** | Ciclo de decisão de orçamento (regras de bloqueio pós-decisão prontas, mas sem endpoints/ações de envio `SENT`, decisão ou evidência), Dashboard `/` (indicadores reais de orçamentos para `ADMIN`/`PLANNING` e visão operacional limpa para `TECHNICIAN`, sem serviços/garantias/revisões) e perfil `TECHNICIAN` (páginas restritas ocultas na interface e bloqueadas com `403` na API, aguardando telas próprias de agenda/visitas). | [`../api/README.md`](../api/README.md), [`../frontend/README.md`](../frontend/README.md) |
 | **Apenas modelada no banco de dados** | Tabelas e enums `Service`, `ServiceVisit`, `VisitTechnician`, `Warranty` e `Revision` (telas `/servicos`, `/garantias` e `/revisoes` exibem `DevPage`). | [`../api/prisma/README.md`](../api/prisma/README.md) |
-| **Planejada e ainda não implementada** | Transições/evidências de orçamento, execução de serviços/visitas e agenda do técnico, garantias, revisões, alertas internos, troca/recuperação de senha, página institucional, módulo opcional de licitações e integração da suíte de testes na `main`. | [`documento-requisitos.md`](documento-requisitos.md) |
+| **Planejada e ainda não implementada** | Transições/evidências de orçamento, execução de serviços/visitas e agenda do técnico, garantias, revisões, alertas internos, troca/recuperação de senha, página institucional e módulo opcional de licitações. | [`documento-requisitos.md`](documento-requisitos.md) |
 
-> **Nota sobre contratos removidos:** os antigos arquivos `docs/api-usuarios.md`, `docs/api-clientes.md` e `docs/validacao-demonstracao.md` foram removidos na reorganização documental (PR #38). Todos os contratos HTTP atualizados de usuários, clientes e orçamentos estão consolidados em [`../api/README.md`](../api/README.md), acompanhados de exemplos executáveis em [`../api/tests/`](../api/tests/).
+> **Nota sobre contratos e testes:** os antigos arquivos `docs/api-usuarios.md`, `docs/api-clientes.md` e `docs/validacao-demonstracao.md` foram removidos na reorganização documental (PR #38). Todos os contratos HTTP atualizados de usuários, clientes e orçamentos estão consolidados em [`../api/README.md`](../api/README.md). A suíte de testes automatizados da API está implementada em [`../api/tests/`](../api/tests/), dividida em testes unitários ([`client.validation.unit.test.ts`](../api/tests/client.validation.unit.test.ts) e [`quote.calculations.unit.test.ts`](../api/tests/quote.calculations.unit.test.ts)) e de integração ([`client.integration.test.ts`](../api/tests/client.integration.test.ts) e [`quote.integration.test.ts`](../api/tests/quote.integration.test.ts)).
 
 ---
 
@@ -46,13 +46,18 @@ Guias que detalham a implementação interna e a organização em camadas de cad
 
 ## 4. Procedimentos de desenvolvimento, testes e implantação
 
-- **[Execução local e checagens (`README.md`)](../README.md#8-pré-requisitos-e-configuração-do-ambiente)** — configuração de `api/.env` e `.env`, criação da rede Docker `deadlock_edge`, provisionamento do primeiro administrador (`admin:create`), comandos `npm run check` e situação atual dos testes automatizados (em desenvolvimento na branch `feat/refining-tests`).
+- **[Execução local e checagens (`README.md`)](../README.md#8-pré-requisitos-e-configuração-do-ambiente)** — configuração de `api/.env` e `.env`, criação da rede Docker `deadlock_edge`, provisionamento do primeiro administrador (`admin:create`), comandos `npm run check` e execução da suíte de testes automatizados (`npm test --prefix api`).
+- **Suíte de testes automatizados da API:** integrada à `main` (PR #54) e executada automaticamente no CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)):
+  - [`api/tests/client.validation.unit.test.ts`](../api/tests/client.validation.unit.test.ts) — validação unitária de CPF/CNPJ e telefones brasileiros.
+  - [`api/tests/quote.calculations.unit.test.ts`](../api/tests/quote.calculations.unit.test.ts) — regras de negócio e cálculos de orçamentos com tipos Decimal em R$.
+  - [`api/tests/client.integration.test.ts`](../api/tests/client.integration.test.ts) — testes de integração HTTP, autenticação, perfis e CRUD de clientes.
+  - [`api/tests/quote.integration.test.ts`](../api/tests/quote.integration.test.ts) — testes de integração HTTP, permissões RBAC e transações de orçamentos.
 - **[CI/CD e Deploy na VM (`deploy.md`)](deploy.md)** — pipeline completo do GitHub Actions (`CI` → `Notify central CD`), integração com o repositório privado `univates-deadlock/deadlock-deploy`, operação do runner self-hosted na VM, Docker Compose, proxy reverso Caddy central e requisitos de variáveis de ambiente.
 
 ---
 
 ## 5. Funcionalidades futuras e fronteiras do sistema
 
-- **Próximas entregas do MVP:** endpoints e fluxos de UI para envio e decisão de orçamentos (com evidência opcional), abertura e planejamento de serviços (a partir de orçamento aprovado ou diretos), agendamento de visitas e alocação de técnicos, visão operacional do técnico, controle de garantias (serviço vs. fabricante), revisões programadas, alertas no painel operacional e integração da suíte de testes automatizados na `main`.
+- **Próximas entregas do MVP:** endpoints e fluxos de UI para envio e decisão de orçamentos (com evidência opcional), abertura e planejamento de serviços (a partir de orçamento aprovado ou diretos), agendamento de visitas e alocação de técnicos, visão operacional do técnico, controle de garantias (serviço vs. fabricante), revisões programadas e alertas no painel operacional.
 - **Opcional do MVP:** acompanhamento manual de licitações (`RF`/escopo adicional descrito na seção 5.2 do PRD).
 - **Fora do MVP:** substituição ou sincronização automática com o sistema externo de estoque/OS oficial da TechPro, disparo automático de mensagens por WhatsApp/e-mail e portal externo para clientes.

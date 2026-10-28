@@ -372,12 +372,7 @@ Executados a partir da raiz do repositório:
 | `npm run db:generate --prefix api` | Gera o cliente Prisma tipado em `api/generated/prisma` |
 | `npm run db:migrate --prefix api` | Aplica as migrations pendentes no PostgreSQL (`prisma migrate deploy`) |
 | `npm run admin:create --prefix api` | Cria o administrador inicial usando `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` |
-| `npm test --prefix api` | Executa `vitest run` (preparado para a suíte automatizada) |
-
-### Situação atual dos testes automatizados
-
-- Na branch `main`, o runner `vitest` e o `supertest` já estão declarados nas `devDependencies` de `api/package.json` e o comando `npm test --prefix api` está disponível, porém **ainda não há arquivos `*.test.ts` / `*.spec.ts` integrados na `main`**.
-- A suíte automatizada de testes está sendo desenvolvida separadamente na branch `feat/refining-tests`. Até sua integração à `main`, o pipeline de CI executa `db:validate`, `db:generate`, `lint`, `typecheck` e `build`, e os roteiros HTTP manuais permanecem em `api/tests/client.http` e `api/tests/quote.http`.
+| `npm test --prefix api` | Executa a suíte de testes automatizados (`vitest run`) |
 
 ---
 
