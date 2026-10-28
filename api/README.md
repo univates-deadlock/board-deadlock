@@ -206,10 +206,47 @@ tratar o status HTTP em ambos os casos.
 npm run check:api
 ```
 
-Essa checagem executa lint, TypeScript e build. A entrega atual não tem suíte
-automatizada; `npm test --prefix api` continua disponível para uma futura suíte,
-mas não participa do CI ou de `check:api`. A verificação funcional desta entrega
-foi feita por HTTP contra PostgreSQL separado, com dados fictícios.
+## Testes automatizados
+
+A API conta com testes automatizados desenvolvidos com **Vitest**, **Supertest**, **Prisma** e **PostgreSQL**, estruturados em testes unitários e de integração.
+
+### Tecnologias e pré-requisitos
+
+- **Node.js 24** e dependências instaladas (`npm ci --prefix api`).
+- **Prisma Client** gerado (`npm run db:generate --prefix api`).
+- **Docker** com daemon em execução (necessário apenas para os testes de integração).
+
+### Comandos de execução
+
+```bash
+# Executa toda a suíte (unitários e integração)
+npm test --prefix api
+
+# Executa apenas os testes unitários (não requer Docker nem banco de dados)
+npm run test:unit --prefix api
+
+# Executa apenas os testes de integração (requer Docker para o banco isolado)
+npm run test:integration --prefix api
+```
+
+### Diferença entre testes unitários e de integração
+
+- **Testes unitários (`*.unit.test.ts`):** avaliam funções puras de regras de negócio (cálculos de itens e totais de orçamentos) em memória, sem depender de banco de dados ou Docker.
+- **Testes de integração (`*.integration.test.ts`):** validam requisições HTTP reais com Supertest contra o servidor Express, cobrindo autenticação por cookies com Better Auth, autorização por perfil (RBAC), validação com Zod e persistência real no PostgreSQL.
+
+### Principais testes cobertos
+
+1. **Permissões (RBAC):** valida o controle de acesso por perfil (`ADMIN`, `PLANNING` e `TECHNICIAN`), comprovando que técnicos autenticados recebem HTTP `403 Forbidden` ao tentar operações de planejamento ou administrativas, e requisições anônimas recebem HTTP `401 Unauthorized`.
+2. **Cálculo de orçamentos:** valida as regras de `quote.calculations.ts` com tipos `Decimal` (quantidade × valor unitário, desconto de item, soma de subtotais, desconto geral, total líquido e rejeição de descontos superiores ao subtotal).
+3. **CRUD de orçamentos:** valida o ciclo de vida completo via HTTP e PostgreSQL real (criação de rascunho com itens e totais calculados no servidor, consulta do registro, atualização de dados, verificação da persistência, exclusão do rascunho e confirmação da exclusão com `404`).
+
+### Banco descartável para integração
+
+A infraestrutura em `tests/global-setup.ts` inicializa um container PostgreSQL (`postgres:17-alpine`) descartável em porta dinâmica de loopback (`127.0.0.1`), aplica as migrations necessárias via `prisma migrate deploy` e descarta o container ao final dos testes ou em interrupções (`SIGINT`/`SIGTERM`). Se o Docker não estiver em execução, uma mensagem clara orienta o desenvolvedor. Nenhum banco de desenvolvimento ou produção é utilizado.
+
+### Execução no GitHub Actions (CI)
+
+No workflow `.github/workflows/ci.yml`, o job `api` executa `npm test` após as etapas de `lint`, `typecheck` e `build`. No ambiente do runner (`ubuntu-latest`), o Docker já está disponível, permitindo a execução automática tanto dos testes unitários quanto dos de integração sem necessidade de secrets de produção.
 
 ## Problemas comuns
 
