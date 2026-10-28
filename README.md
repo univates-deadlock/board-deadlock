@@ -140,8 +140,9 @@ administrador, abra outro terminal e siga
 
 Dentro do Compose, a API usa `db:5432`; no host, a URL do banco usa `localhost`.
 Por padrão, o banco, o frontend e a API publicam portas no loopback (`127.0.0.1`).
-Na VM, o Caddy central disponibiliza frontend e API em `https://app.matbdev.com`." Dependências, cliente Prisma e cache do
-Next.js usam volumes próprios, evitando alterações de propriedade no host.
+Na VM, o Caddy central disponibiliza frontend e API em `https://app.matbdev.com`.
+Dependências, cliente Prisma e cache do Next.js usam volumes próprios,
+evitando alterações de propriedade no host.
 
 ```bash
 docker compose ps
