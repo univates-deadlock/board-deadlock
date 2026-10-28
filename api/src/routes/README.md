@@ -1,14 +1,12 @@
 # Rotas
 
-Uma rota associa método e caminho a um controller. O prefixo `/api/users` é
-registrado em `app.ts`; portanto `router.get('/')` atende `GET /api/users`.
+Cada roteador associa método e caminho HTTP a um controller, sendo montado sob seu prefixo em `src/app.ts`:
 
-Em `user.route.ts`, `router.use(requireActiveUser, requireAdmin)` protege todas as
-operações do módulo. Não repita a autenticação em cada controller nem remova o
-middleware para facilitar chamadas do frontend.
+- `health.route.ts` (`/api/health`): verificação pública de disponibilidade HTTP.
+- `user.route.ts` (`/api/users`): protegido por `router.use(requireActiveUser, requireAdmin)` (exclusivo `ADMIN`).
+- `client.route.ts` (`/api/clients`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`.
+- `quote.route.ts` (`/api/quotes`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo as sub-rotas `/:id/items` e `/:id/items/:itemId`.
 
-O health é público. As rotas `/api/auth/*` são montadas diretamente em `app.ts`
-pelo handler do Better Auth.
+As rotas `/api/auth/*` são montadas diretamente em `app.ts` pelo handler do Better Auth, antes de `express.json()`.
 
-Para outro CRUD: crie um router, escolha as permissões adequadas ao requisito,
-importe seus controllers e registre o prefixo em `app.ts`.
+Não repita checagens de sessão em cada controller nem remova middlewares de autorização para facilitar chamadas do frontend. Para adicionar um novo módulo, crie o roteador com as permissões do requisito e registre o prefixo em `app.ts`.

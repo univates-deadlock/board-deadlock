@@ -1,15 +1,9 @@
 # Schemas Zod
 
-TypeScript valida o código; Zod valida os dados que chegam em tempo de execução.
-`user.schema.ts` define o contrato de cadastro, edição, envelope e identificador.
+TypeScript verifica tipos em tempo de compilação; Zod valida em tempo de execução os dados externos que chegam pela API:
 
-- Cadastro exige nome, email, perfil e senha (8–128 caracteres).
-- Edição aceita nome, email e perfil, com pelo menos um campo.
-- Nome é aparado; email é aparado e convertido para minúsculas.
-- Objetos são estritos: campos extras são recusados.
-- IDs são strings não vazias; não restringimos a UUID porque IDs existentes do
-  Better Auth podem usar outro formato.
+- `user.schema.ts`: cadastro (nome, e-mail em minúsculas, perfil e senha de 8 a 128 caracteres), edição parcial com pelo menos um campo, envelope `{ userData }` e `userIdSchema` (string não vazia até 128 caracteres, compatível com IDs do Better Auth).
+- `client.schema.ts`: tipo (`INDIVIDUAL` ou `COMPANY`), nome, WhatsApp, localização e campos opcionais/anuláveis (`document`, `contactName`, `phone`, `email` normalizado e `notes`), além de `clientIdSchema` (UUID).
+- `quote.schema.ts`: validação de UUIDs (`clientId`, `quoteId`, `quoteItemId`), filtros de listagem (`clientId`, `status`), itens (`PRODUCT`, `SERVICE`, `OTHER`), quantidades (`> 0`) e valores monetários (`>= 0`) com no máximo 2 casas decimais e limite de 100 itens por orçamento (`MAX_QUOTE_ITEMS`).
 
-Use `schema.parse(valor)` no controller e `z.infer<typeof schema>` para derivar o
-tipo usado no service. Não use `Prisma.UserCreateInput` para validar HTTP: ele
-aceita operações de persistência e relações que não pertencem ao contrato.
+Os objetos de entrada usam `z.strictObject(...)`, recusando campos extras. Use `schema.parse(...)` no controller e `z.infer<typeof schema>` para tipar os `services` — nunca exponha tipos internos do Prisma (`Prisma.*CreateInput`) diretamente ao contrato HTTP.

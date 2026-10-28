@@ -1,15 +1,12 @@
-# Prisma e banco
+# Prisma e banco de dados
 
-`schema.prisma` descreve entidades, campos, relações e enums. O schema atual já
-inclui entidades de negócio; isso não significa que seus endpoints já existam.
-Autenticação usa `User`, `Account`, `Session` e `Verification`.
+`schema.prisma` descreve entidades, campos, relações e enums do banco PostgreSQL. A presença de um modelo no schema não significa que seus endpoints HTTP já existam:
 
-- `User`: perfil e atividade, sem senha.
-- `Account`: credencial de login; senha contém um hash.
-- `Session`: login persistido, token e expiração.
-- `Verification`: estrutura da biblioteca para fluxos futuros de verificação.
+- **Autenticação (Better Auth):** `User` (perfil e atividade, sem senha), `Account` (credencial com hash de senha), `Session` (sessão persistida, token e expiração) e `Verification` (estrutura da biblioteca para fluxos futuros de verificação).
+- **Negócio com CRUD implementado na API:** `Client`, `Quote` e `QuoteItem` (além da administração de `User`).
+- **Negócio apenas modelado no banco (sem rotas na entrega atual):** `Service`, `ServiceVisit`, `VisitTechnician`, `Warranty` e `Revision`.
 
-Comandos da raiz:
+Comandos executados a partir da raiz do repositório:
 
 ```bash
 npm run db:validate --prefix api
@@ -17,14 +14,11 @@ npm run db:generate --prefix api
 npm run db:migrate --prefix api
 ```
 
-Migrations já aplicadas não devem ser reescritas. Para futuras alterações, ajuste
-o schema e crie uma migration nova em um banco de desenvolvimento:
+Migrations já aplicadas não devem ser reescritas. Para futuras alterações, ajuste o schema e crie uma migration nova em um banco de desenvolvimento:
 
 ```bash
 cd api
 npx prisma migrate dev --name descricao_da_alteracao
 ```
 
-Revise o SQL antes de compartilhar. `migrate deploy` aplica migrations existentes,
-mas não cria novas. Não use reset em um banco que contém dados importantes.
-`uuid()` e `@updatedAt` são comportamentos gerenciados pelo cliente Prisma.
+Revise o SQL antes de compartilhar. `migrate deploy` aplica migrations existentes, mas não cria novas. Não use `reset` em um banco que contém dados importantes. `uuid()` e `@updatedAt` são gerenciados pelo cliente Prisma. Consulte também o [histórico de migrations](migrations/README.md).

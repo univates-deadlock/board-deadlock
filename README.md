@@ -4,34 +4,22 @@
 
 # TechPro
 
-Sistema interno para organizar o fluxo cliente → orçamento → serviço → visita.
-Projeto da disciplina de Laboratório de Programação para Internet da Univates.
+Sistema web interno para gestão do fluxo comercial e operacional **cliente → orçamento → serviço → visita**.<br>
+Projeto desenvolvido na disciplina de **Laboratório de Programação para Internet** da **Univates** (Parcial 2).
 
 </div>
 
-## Estado atual e Parcial 1
+---
 
-Esta entrega implementa **autenticação/sessão e CRUDs de usuários e clientes,
-com telas internas integradas à API**.
-O usuário possui perfil `ADMIN`, `PLANNING` ou `TECHNICIAN`. Administradores podem
-cadastrar usuários com senha, consultar, editar, ativar e desativar. O login usa
-email e senha; sessões são persistidas no PostgreSQL e transportadas por cookies.
+## 1. Apresentação e objetivo
 
-Administradores gerenciam usuários; `ADMIN` e `PLANNING` gerenciam clientes.
-As telas permitem cadastrar, listar, editar, desativar e reativar registros.
-A busca de clientes por nome ou documento acontece na lista carregada no navegador.
-O frontend tem login e navegação interna autenticada. Dashboard, orçamentos,
-serviços, garantias e revisões ainda não têm operações: são páginas de apresentação
-ou de “em desenvolvimento”. A página institucional também permanece pendente.
-O schema inclui entidades futuras; isso não significa que seus endpoints existem.
+A **TechPro** atua em segurança eletrônica e automação residencial, comercial e industrial. O sistema interno foi projetado para centralizar o histórico de clientes, a elaboração e o acompanhamento de orçamentos, o planejamento de serviços e visitas técnicas e o controle futuro de garantias e revisões, reduzindo a dispersão de informações entre WhatsApp, planilhas e controles paralelos.
 
-Veja o [roteiro e resultado da validação para demonstração](docs/validacao-demonstracao.md).
+**Fronteira do produto:** esta aplicação é exclusivamente interna e **não substitui** o software já utilizado pela empresa para controle de estoque e emissão da Ordem de Serviço (OS) oficial. Não há integração automática com o sistema externo no escopo do MVP.
 
-O provisionamento da stack ainda exige passos manuais antes do login: `api/.env`
-com `BETTER_AUTH_SECRET` e a criação do primeiro administrador com `admin:create`.
-Sem essa conta não há como entrar, porque não existe cadastro público.
+---
 
-Critérios informados para a Parcial 1:
+## 2. Equipe e referências
 
 | Critério | Pontos | Evidência para apresentar |
 | --- | --- | --- |
@@ -52,161 +40,296 @@ funcionalmente por HTTP com PostgreSQL separado e dados fictícios. O CI e
 - [Mateus Carniel Brambilla](https://github.com/matbdev)
 - [Tainá Luiza Schmidt](https://github.com/TainaSchmidt)
 
-A divisão nominal das tarefas deve refletir o combinado real no
-[board do GitHub](https://github.com/orgs/univates-deadlock/projects/2/views/1).
-Nos slides, associem cada entrega ao nome de quem a implementou.
+Referências do projeto:
 
-- [Figma Desktop](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=53-2&t=6ckapUM5hbwQRKYA-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=53%3A2)
-- [Figma Mobile](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=318-3&p=f&t=6ckapUM5hbwQRKYA-0&scaling=scale-down&content-scaling=fixed&page-id=318%3A3&starting-point-node-id=318%3A3)
+- [Board do projeto no GitHub](https://github.com/orgs/univates-deadlock/projects/2/views/1)
+- [Protótipo Figma — Desktop](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=53-2&t=6ckapUM5hbwQRKYA-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=53%3A2)
+- [Protótipo Figma — Mobile](https://www.figma.com/proto/luMSJDdrcew9JWRV0bKfvf/Site-TechPro?node-id=318-3&p=f&t=6ckapUM5hbwQRKYA-0&scaling=scale-down&content-scaling=fixed&page-id=318%3A3&starting-point-node-id=318%3A3)
 
-## Estrutura
+---
+
+## 3. Tecnologias utilizadas
+
+| Camada | Tecnologias |
+| --- | --- |
+| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Zod 4, Better Auth Client |
+| **Backend (API)** | Node.js 24, Express 5, TypeScript, Zod 4, Better Auth, Helmet, CORS, `express-rate-limit` |
+| **Persistência** | PostgreSQL 17, Prisma ORM 7 (`@prisma/adapter-pg`) e migrations SQL versionadas |
+| **Infraestrutura e CI/CD** | Docker, Docker Compose, GitHub Actions, runner self-hosted (`deadlock-deploy`) e proxy reverso Caddy |
+
+---
+
+## 4. Arquitetura geral
+
+A aplicação adota arquitetura cliente-servidor com separação estrita entre interface, regras de negócio e banco de dados:
 
 ```text
-api/          Express, TypeScript, Zod, Prisma, autenticação e usuários
-frontend/     Next.js App Router, React e Tailwind
-assets/       logo e imagens dos documentos
-docs/        requisitos, contexto e contrato da API
-.github/      CI, deploy automático e instruções/skills do Copilot
+Navegador
+  │
+  ├──► Frontend (Next.js App Router — porta 3000)
+  │      ├─ Proteção SSR no layout autenticado via requireActiveSession()
+  │      └─ Client Components para formulários, filtros, máscaras e interações
+  │
+  └──► API REST (Express 5 — porta 4000)
+         ├─ CORS + Helmet + Rate Limit + Better Auth (/api/auth/*)
+         ├─ Rotas → Middlewares (sessão/perfil) → Controllers + Schemas Zod → Services → Prisma
+         └─ PostgreSQL 17 (porta 5432)
 ```
 
-A API e o frontend possuem `package.json` e lockfile próprios. Instale uma
-dependência na aplicação que a utiliza, por exemplo `npm install pacote --prefix api`.
-O Prisma pertence a `api/`; não execute `prisma init` na raiz.
-Uma pasta local `api/frontend/` não é a aplicação oficial e não é usada pelos
-comandos abaixo; os arquivos preexistentes nela foram preservados.
+Em implantação na VM da Univates, os containers `api` e `frontend` conectam-se à rede Docker externa `deadlock_edge` e são publicados sob HTTPS em um único domínio (`https://app.matbdev.com`) por meio de um container **Caddy central** (externo a este repositório), que encaminha `/api/*` para `techpro-api:4000` e as demais rotas para `techpro-frontend:3000`.
 
-## Requisitos
+---
 
-- Node.js **24**, com npm.
-- Docker com plugin Compose, daemon ativo e acesso liberado ao usuário local.
-- Portas locais 3000 (frontend), 4000 (API) e 5432 (PostgreSQL) disponíveis.
+## 5. Estado atual das funcionalidades (Parcial 2)
 
-## Primeiro acesso: configurar o ambiente
+A classificação abaixo reflete exclusivamente o que está implementado no código da branch `main` (a presença de modelos no Prisma ou páginas de espaço reservado não caracteriza módulo concluído):
 
-> Para executar a stack pelo Docker Compose ou preparar a VM, consulte
-> [Deploy e arquivos de ambiente](docs/deploy.md). O projeto usa dois arquivos
-> não versionados: `.env` na raiz (Compose/PostgreSQL/URLs) e `api/.env`
-> (segredo Better Auth). Os arquivos `.env.example` são apenas modelos.
+### 5.1 Implementadas e integradas ao frontend
 
-Clone o repositório, entre na raiz e instale as dependências:
+- **Autenticação e gerenciamento de sessão:** login com e-mail e senha (`/login`), persistência de sessão no PostgreSQL com cookie HTTP-only, validação SSR de sessão ativa nas rotas internas, bloqueio de usuários inativos e logout. Provisionamento local do primeiro administrador via script `admin:create`.
+- **Gestão de usuários (`/usuarios` e `/api/users`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil, ativação e desativação lógica (`isActive`), com revogação automática de sessões e proteção contra remoção ou desativação do próprio usuário ou do último administrador ativo.
+- **Gestão de clientes (`/clientes` e `/api/clients`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição de clientes Pessoa Física (`INDIVIDUAL`) e Pessoa Jurídica (`COMPANY`) com máscaras de documento e telefone, validação de unicidade de e-mail, ativação e inativação lógica (`active`).
+- **Gestão de orçamentos e itens em elaboração (`/orcamentos`, `/orcamentos/[id]` e `/api/quotes`):** listagem com busca local e filtro por status, visualização detalhada com resumo financeiro e histórico, criação de orçamento em rascunho (`DRAFT`) vinculado a cliente ativo, adição/edição/remoção de itens (`PRODUCT`, `SERVICE`, `OTHER`), atualização de observações e desconto geral, recálculo exato no servidor com `Decimal(12, 2)` e exclusão física restrita a rascunhos (`DRAFT`).
+
+### 5.2 Implementadas apenas no backend
+
+- **Verificação de disponibilidade (`GET /api/health`):** endpoint público utilizado pelos healthchecks do Docker Compose e pela validação de deploy.
+- **Filtros de consulta na API e endpoints auxiliares:** filtragem de orçamentos por query string (`GET /api/quotes?clientId=...&status=...`), busca individual por ID em usuários (`GET /api/users/:id`) e clientes (`GET /api/clients/:id`), e rotas `DELETE` equivalentes à desativação lógica em `/api/users/:id` e `/api/clients/:id`.
+
+### 5.3 Parcialmente implementadas
+
+- **Ciclo de decisão do orçamento:** o modelo de dados e as regras de proteção da API já distinguem orçamentos em aberto (`DRAFT`, `SENT`) de orçamentos decididos (`APPROVED`, `REJECTED`, `EXPIRED`), porém **ainda não existem endpoints nem ações na interface** para marcar um orçamento como enviado, registrar aprovação/rejeição/expiração ou anexar arquivo de evidência.
+- **Dashboard operacional (`/`):** apresenta cartões de indicadores ("Em aberto", "Aguardando decisão", "Rascunhos", "Valor em aberto"), lista de orçamentos pendentes e contagem por status calculados a partir de `GET /api/quotes`. Os painéis de "Próximos serviços e visitas" e "Revisões e garantias" exibem avisos estáticos aguardando a implementação desses módulos.
+- **Experiência do perfil `TECHNICIAN`:** o perfil é autenticado e devidamente bloqueado pela API (`403`) nos módulos administrativos e comerciais, mas ainda não dispõe de endpoints próprios nem telas de agenda/execução; ao acessar `/` (que consome `/api/quotes`), o técnico recebe mensagem de acesso negado.
+
+### 5.4 Apenas modeladas no banco de dados
+
+As tabelas e enums abaixo já existem em [`api/prisma/schema.prisma`](api/prisma/schema.prisma) e nas migrations, mas **não possuem rotas, controllers ou services na API**; no frontend, `/servicos`, `/garantias` e `/revisoes` exibem o componente `DevPage` ("Em desenvolvimento"):
+
+- **Serviços** (`Service`, `ServiceOrigin`)
+- **Visitas técnicas e alocação de técnicos** (`ServiceVisit`, `VisitTechnician`)
+- **Garantias de serviço e fabricante** (`Warranty`, `WarrantyType`)
+- **Revisões programadas** (`Revision`, `RevisionStatus`)
+- **Verificações auxiliares do Better Auth** (`Verification`)
+
+### 5.5 Planejadas e ainda não implementadas
+
+- Endpoints e interface para envio de orçamento (`DRAFT → SENT`), decisão (`APPROVED`, `REJECTED`, `EXPIRED`) e upload de evidências.
+- Módulos completos de serviços, agendamento de visitas, atribuição/agenda de técnicos, garantias, revisões e alertas operacionais internos.
+- Alteração e recuperação de senha de usuários.
+- Página institucional pública prevista nos protótipos iniciais.
+- Módulo opcional de acompanhamento manual de licitações.
+- Integração da suíte de testes automatizados na branch `main` (em desenvolvimento paralelo na branch `feat/refining-tests`).
+
+---
+
+## 6. Perfis de usuário e permissões
+
+Toda autorização real é validada no backend a partir da sessão verificada (`res.locals.user`), nunca confiando apenas na ocultação visual do frontend:
+
+| Perfil | Papel no negócio | Permissões implementadas atualmente |
+| --- | --- | --- |
+| `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. |
+| `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. Recebe `403` em `/api/users` (link "Usuários" oculto na barra lateral). |
+| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno, porém recebe `403` em `/api/users`, `/api/clients` e `/api/quotes`. Suas funcionalidades operacionais (agenda e registro de visitas) pertencem às próximas entregas. |
+
+---
+
+## 7. Estrutura do repositório
+
+```text
+techpro-app/
+├── api/                  # API REST (Express 5, TypeScript, Zod, Prisma 7, Better Auth)
+│   ├── prisma/           # Schema relacional e migrations versionadas
+│   ├── src/              # Código-fonte em camadas (routes, middlewares, controllers, schemas, services)
+│   └── tests/            # Coleções HTTP manuais (.http) para clientes e orçamentos
+├── frontend/             # Aplicação web (Next.js App Router, React 19, Tailwind CSS 4)
+│   ├── app/              # Rotas públicas (/login) e grupo autenticado ((protected)/)
+│   ├── components/       # Shell de layout, primitivos de UI e telas dos módulos
+│   └── lib/              # Clientes de autenticação/API, schemas Zod, máscaras e moeda
+├── docs/                 # Índice documental, requisitos (PRD), descoberta e guia de deploy
+├── assets/               # Logotipo e diagramas utilizados na documentação
+├── .github/              # Workflows de CI/CD e instruções/skills de agentes
+├── docker-compose.yml    # Orquestração de PostgreSQL, API e frontend
+└── package.json          # Scripts agregadores de instalação, execução e verificação
+```
+
+> **Observações importantes sobre pacotes:**
+> - `api/` e `frontend/` possuem `package.json` e `package-lock.json` independentes. Instale dependências sempre no pacote consumidor (`npm install <pacote> --prefix api` ou `--prefix frontend`), nunca na raiz.
+> - O diretório `api/frontend/` contém apenas manifestos residuais preservados no histórico e **não** faz parte da aplicação oficial.
+
+---
+
+## 8. Pré-requisitos e configuração do ambiente
+
+### Pré-requisitos
+
+- **Node.js 24** (`>=24 <25`) e **npm**.
+- **Docker** com plugin **Docker Compose** ativo e permissão para o usuário local.
+- Portas locais livres: `3000` (frontend), `4000` (API) e `5432` (PostgreSQL).
+
+### Rede Docker externa (`deadlock_edge`)
+
+O `docker-compose.yml` conecta `api` e `frontend` à rede externa `deadlock_edge` (usada na VM pelo proxy reverso Caddy). Para executar o Compose localmente pela primeira vez, crie essa rede uma única vez:
 
 ```bash
-npm run install:all
+docker network inspect deadlock_edge >/dev/null 2>&1 || docker network create deadlock_edge
 ```
 
-Se ainda não existe `api/.env`, crie-o a partir de `api/.env.example`.
+### Arquivos de ambiente (`.env` e `api/.env`)
+
+O projeto trabalha com dois arquivos de ambiente ignorados pelo Git (os arquivos `.env.example` são apenas modelos versionados):
+
+1. **`api/.env` (obrigatório):** lido pelo container e pelos scripts da API. Deve definir `BETTER_AUTH_SECRET` com ao menos **32 caracteres**.
+2. **`.env` na raiz (opcional localmente, obrigatório na VM):** parametriza credenciais do PostgreSQL, portas e URLs no `docker-compose.yml`. No desenvolvimento local via Compose, caso `.env` não exista na raiz, o `docker-compose.yml` aplica automaticamente os padrões locais (`techpro`, `localhost`, portas `3000`/`4000`/`5432`).
+
+Para preparar `api/.env` localmente sem sobrescrever um arquivo já existente e gerar um segredo aleatório sem exibi-lo no terminal:
 
 ```bash
 if [ ! -f api/.env ]; then
   cp api/.env.example api/.env
 fi
+
+node --input-type=module - <<'NODE'
+import { readFileSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+const path = 'api/.env';
+const contents = readFileSync(path, 'utf8');
+if (/^BETTER_AUTH_SECRET=.+$/m.test(contents)) {
+  console.log('BETTER_AUTH_SECRET existente preservado.');
+} else {
+  const clean = contents.replace(/^BETTER_AUTH_SECRET=.*\n?/m, '');
+  writeFileSync(path, clean.trimEnd() + '\nBETTER_AUTH_SECRET=' + randomBytes(32).toString('hex') + '\n');
+  console.log('BETTER_AUTH_SECRET local configurado.');
+}
+NODE
 ```
- Preserve um
-arquivo existente. Preencha `BETTER_AUTH_SECRET` com um valor aleatório de pelo
-menos 32 caracteres; o [README da API](api/README.md#instalar-e-configurar) contém
-um comando que gera e grava o secret sem exibi-lo. O arquivo deve conter:
 
-| Variável | Desenvolvimento local |
-| --- | --- |
-| `PORT` | `4000` |
-| `DATABASE_URL` | `postgresql://techpro:techpro@localhost:5432/techpro` |
-| `BETTER_AUTH_URL` | `http://localhost:4000` |
-| `FE_BASE_URL` | `http://localhost:3000` |
-| `BETTER_AUTH_SECRET` | secret local aleatório |
+> Caso opte por criar `.env` na raiz a partir de `.env.example`, defina `POSTGRES_PASSWORD` antes de inicializar o volume do banco (ou mantenha a senha já gravada no volume `postgres_data` existente). Para execução da API **fora** do Docker Compose, descomente também `PORT`, `DATABASE_URL`, `BETTER_AUTH_URL` e `FE_BASE_URL` em `api/.env` conforme detalhado em [`api/README.md`](api/README.md#instalação-e-configuração).
 
-São credenciais locais de desenvolvimento. O `.env` é ignorado pelo Git e não
-deve conter valores reais compartilhados em commits, slides ou prints.
+---
 
-## Stack completa no Docker
+## 9. Instalação e execução local
 
-Após configurar `api/.env`:
+### Opção 1: Stack completa via Docker Compose (recomendada)
+
+Com a rede `deadlock_edge` criada e `api/.env` configurado, execute na raiz do repositório:
 
 ```bash
 docker compose up --build
 ```
 
-O PostgreSQL é iniciado primeiro; a API gera o cliente Prisma, aplica migrations
-e inicia o servidor. O frontend inicia em seguida. Para criar o primeiro
-administrador, abra outro terminal e siga
-[este procedimento](api/README.md#criar-o-primeiro-administrador), usando a variante
-`docker compose exec` indicada no guia. Depois faça login usando esse cadastro.
+*(Alternativa equivalente via npm: `npm run dev`.)*
 
-| Serviço | Endereço no host |
-| --- | --- |
-| Frontend | http://localhost:3000 |
-| API | http://localhost:4000 |
-| Health HTTP | http://localhost:4000/api/health |
-| PostgreSQL | localhost:5432 |
+Na inicialização, o PostgreSQL aguarda ficar saudável (`pg_isready`), a API gera o cliente Prisma, aplica as migrations pendentes (`prisma migrate deploy`) e inicia em modo watch, e o frontend inicia em seguida:
 
-Dentro do Compose, a API usa `db:5432`; no host, a URL do banco usa `localhost`.
-Por padrão, o banco, o frontend e a API publicam portas no loopback (`127.0.0.1`).
-Na VM, o Caddy central disponibiliza frontend e API em `https://app.matbdev.com`.
-Dependências, cliente Prisma e cache do Next.js usam volumes próprios,
-evitando alterações de propriedade no host.
+| Serviço | Endereço local | Observação |
+| --- | --- | --- |
+| Frontend | `http://localhost:3000` | Redireciona para `/login` sem sessão ativa |
+| API | `http://localhost:4000` | Base REST e autenticação (`/api/*`) |
+| Health check da API | `http://localhost:4000/api/health` | Retorna `200` com `{"status":"ok", ...}` |
+| PostgreSQL | `localhost:5432` | Internamente no Compose usa o host `db:5432` |
+
+Comandos úteis de operação dos containers:
 
 ```bash
 docker compose ps
-docker compose logs -f api
+docker compose logs -f api frontend
 docker compose down
 ```
 
-`down` preserva o volume do banco. Não adicione `-v` se quiser manter seus dados.
-As variáveis `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`,
-`API_PORT`, `FRONTEND_PORT` e `APP_HOST` (além de `API_BIND_IP` e `FRONTEND_BIND_IP`)
-permitem ajustar o Compose. Ao rodar em servidor remoto, defina `APP_HOST=<ip_ou_host>`
-(por exemplo criando `.env` a partir de `.env.example`) para que CORS, Better Auth
-e a URL pública da API no frontend apontem automaticamente para o endereço de acesso.
+> `docker compose down` preserva os dados do banco no volume `postgres_data`. **Não utilize `-v`** se desejar manter usuários, clientes e orçamentos cadastrados.
 
-## Deploy automático e Copilot
+### Opção 2: Execução direta no host (com banco em container)
 
-O CD é orquestrado pelo repositório privado `univates-deadlock/deadlock-deploy`,
-cujo runner self-hosted executa o Docker Compose diretamente na VM. O fluxo
-manual usa Actions → Deploy Deadlock → `app`. A automatização após CI aprovado
-na `main` depende do workflow de notificação central. Veja [o guia](docs/deploy.md).
-
-## Como entender a implementação
-
-Um cadastro percorre:
-
-```text
-requisição POST /api/users
-→ middleware de sessão: quem está chamando?
-→ middleware de perfil: essa pessoa é ADMIN?
-→ controller: o JSON e os parâmetros são válidos?
-→ service: aplicar regras, hash e transação
-→ Prisma/PostgreSQL: persistir usuário e credencial
-→ resposta 201 com campos públicos
-```
-
-Login/logout são atendidos pelo Better Auth. O CRUD usa rotas, controllers,
-schemas e services próprios. A senha nunca aparece na resposta do CRUD.
-`DELETE /api/users/:id` desativa em vez de apagar, preservando os vínculos de
-negócio. Confirme com o professor a aceitação da exclusão lógica na rubrica.
-
-Leitura recomendada:
-
-1. [Guia da API](api/README.md): instalação, autenticação e arquitetura.
-2. [Contrato e demonstração](docs/api-usuarios.md): requests completos com curl.
-   [Contrato de clientes](docs/api-clientes.md): permissões e payloads do segundo CRUD.
-3. READMEs em `api/src/`: responsabilidade de cada camada e padrão para os colegas.
-4. [Prisma](api/prisma/README.md): modelos e migrations.
-5. [Requisitos](docs/documento-requisitos.md): produto esperado e regras.
-
-## Checagens e processo de trabalho
+Para instalar dependências localmente, rodar checagens na máquina ou executar API e frontend fora dos containers:
 
 ```bash
-npm run check
+npm run install:all
+docker compose up -d db
 ```
 
-Ou separadamente:
+Garanta que `DATABASE_URL`, `PORT`, `BETTER_AUTH_URL` e `FE_BASE_URL` estejam preenchidos em `api/.env` apontando para `localhost`, aplique as migrations e inicie os serviços em terminais separados:
 
 ```bash
-npm run check:api
-npm run check:frontend
+npm run db:generate --prefix api
+npm run db:migrate --prefix api
+npm run dev --prefix api
+```
+
+```bash
+npm run dev --prefix frontend
+```
+
+> Use sempre `localhost` de forma consistente no navegador e nas variáveis de ambiente (`localhost` e `127.0.0.1` são origens distintas para cookies e CORS).
+
+---
+
+## 10. Acesso inicial e criação do primeiro administrador
+
+O sistema **não possui cadastro público**. Antes do primeiro login, provisione o administrador inicial com a stack em execução.
+
+Em um terminal Bash na raiz do repositório (com a stack rodando via Docker Compose):
+
+```bash
+export ADMIN_NAME='Administrador TechPro'
+export ADMIN_EMAIL='admin@techpro.local'
+read -r -s -p 'Senha inicial (8 a 128 caracteres): ' ADMIN_PASSWORD
+printf '\n'
+export ADMIN_PASSWORD
+docker compose exec -e ADMIN_NAME -e ADMIN_EMAIL -e ADMIN_PASSWORD api npm run admin:create
+unset ADMIN_NAME ADMIN_EMAIL ADMIN_PASSWORD
+```
+
+*(Se estiver executando a API diretamente no host, substitua a linha `docker compose exec ...` por `npm run admin:create --prefix api`.)*
+
+O script cria o usuário `ADMIN` e sua credencial com hash de senha de forma atômica, recusando a operação caso já exista um administrador ativo ou caso o e-mail já esteja em uso. Os demais usuários (`ADMIN`, `PLANNING`, `TECHNICIAN`) devem ser cadastrados na tela `/usuarios` ou via `/api/users`.
+
+---
+
+## 11. Comandos de validação e situação dos testes
+
+### Checagens estáticas e build
+
+Na raiz do repositório (após `npm run install:all`):
+
+```bash
+npm run check           # Executa check:api e check:frontend
+npm run check:api       # Lint, typecheck e build da API
+npm run check:frontend  # Lint, typecheck e build do frontend
+```
+
+Comandos específicos do Prisma (requerem `DATABASE_URL` definido no ambiente ou em `api/.env`):
+
+```bash
 npm run db:validate --prefix api
 npm run db:generate --prefix api
+npm run db:migrate --prefix api
 ```
 
+> O build do frontend (`next build --webpack`) baixa a fonte `Rubik` via `next/font/google` e requer acesso à rede durante a compilação.
+
+### Situação atual dos testes automatizados
+
+- Na branch `main`, o pacote `api` já possui o script `npm test --prefix api` (`vitest run`) com `vitest` e `supertest` configurados nas dependências de desenvolvimento, além de coleções de requisições manuais em [`api/tests/client.http`](api/tests/client.http) e [`api/tests/quote.http`](api/tests/quote.http).
+- A suíte de testes automatizados está sendo desenvolvida separadamente na branch `feat/refining-tests` e **ainda não está integrada à `main`** nem ao comando `npm run check` / workflow `CI`. Esta seção e o guia da API serão atualizados assim que a branch de testes for revisada e mesclada.
+
+---
+
+## 12. CI/CD e implantação
+
+O fluxo de integração e entrega contínua está dividido entre este repositório e o orquestrador privado de infraestrutura da equipe (`univates-deadlock/deadlock-deploy`):
+
+1. **Integração Contínua (`CI`):** em cada `push` ou `pull_request`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) valida schema/client Prisma, ESLint, TypeScript e build da API e do frontend em Node.js 24.
+2. **Notificação de CD (`Notify central CD`):** quando o workflow `CI` conclui com sucesso após um `push` na branch `main`, [`.github/workflows/notify-deploy.yml`](.github/workflows/notify-deploy.yml) dispara um evento `repository_dispatch` (`deploy-main`) para `univates-deadlock/deadlock-deploy`.
+3. **Implantação via runner self-hosted:** o runner self-hosted instalado na VM da Univates recebe o job diretamente do GitHub via HTTPS (sem depender de SSH de entrada vindo dos runners hospedados pelo GitHub), atualiza o checkout em `~/techpro-app`, executa `docker compose up -d --build` e valida os healthchecks locais.
+4. **Publicação HTTPS:** o Caddy central (mantido em `deadlock-deploy`) publica a aplicação em `https://app.matbdev.com` através da rede Docker `deadlock_edge`.
+
+> **Pendência técnica conhecida:** o workflow legado de deploy via SSH ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) ainda permanece versionado com gatilhos `push` (`main`) e `workflow_dispatch` ativos, devendo ser desativado em tarefa específica de infraestrutura. Consulte todos os detalhes operacionais em [`docs/deploy.md`](docs/deploy.md).
+
+---
+
+## 13. Roteiro de apoio para demonstração acadêmica (Parcial 2)
 `check` executa lint, verificação TypeScript e build de ambas as aplicações.
 `npm test --prefix api` executa a suíte de testes unitários e de integração com Vitest e
 Supertest, integrada ao CI. A integração usa um PostgreSQL descartável no Docker; os
@@ -214,32 +337,30 @@ testes de cálculo rodam sem Docker. Veja os comandos e detalhes no
 [guia da API](api/README.md#testes-automatizados). Builds do frontend
 podem precisar de rede para baixar as fontes configuradas em `next/font/google`.
 
-Para uma tarefa: alinhe o escopo no board, trabalhe em uma branch, faça commits
-com alterações relacionadas, confira a execução/checagens e abra PR para revisão
-da equipe. A apresentação deve mostrar histórico e branches reais; este trabalho
-não criou commits ou publicou alterações automaticamente.
+Para conduzir a apresentação técnica do projeto de forma alinhada ao código atual:
 
-## Preparar a apresentação
+1. **Autenticação e controle de sessão:** demonstrar redirecionamento automático para `/login`, tentativa com credencial inválida (`401`), login como `ADMIN`, persistência por cookie HTTP-only e encerramento de sessão (`Sair`).
+2. **Autorização por perfis:** demonstrar a gestão de usuários exclusiva para `ADMIN` (`/usuarios`), o acesso compartilhado de `ADMIN` e `PLANNING` em `/clientes` e `/orcamentos`, o bloqueio no backend (`403`) ao tentar acessar recursos sem permissão e a revogação imediata de sessão ao desativar um usuário.
+3. **CRUDs e regras de negócio:** demonstrar cadastro/edição/inativação lógica de clientes (com máscaras CPF/CNPJ e WhatsApp) e o fluxo de orçamentos (criação em `DRAFT` para cliente ativo, adição/edição/remoção de itens, recálculo decimal automático com descontos, visualização detalhada em `/orcamentos/[id]`, indicadores refletidos no Dashboard `/` e exclusão restrita a rascunhos).
+4. **Arquitetura, trabalho em equipe e CI/CD:** apresentar a separação `routes → middlewares → controllers/schemas → services → Prisma`, o histórico de branches/PRs e board da equipe, o pipeline `CI` → `Notify central CD` → runner self-hosted e a publicação reversa com Docker Compose e Caddy.
 
-Os grupos terão dez minutos de apresentação e o professor cinco minutos.
-Montem slides com:
+---
 
-- divisão nominal de tarefas;
-- prints/GIFs/vídeo do frontend;
-- fluxo de login, sessão e logout;
-- os dois CRUDs, incluindo erros e validação;
-- histórico de commits e branches do GitHub;
-- dificuldades, decisões e aprendizados.
+## 14. Limitações atuais e próximas entregas
 
-Todos devem entender a parte que implementaram, mesmo quem não apresentar.
-Use dados fictícios e o roteiro de [API de usuários](docs/api-usuarios.md).
+- **Transições de orçamento pendentes:** orçamentos são criados e editados em `DRAFT`, mas o envio ao cliente (`SENT`), o registro de decisão (`APPROVED`, `REJECTED`, `EXPIRED`) e o upload de evidências dependem de novos endpoints e fluxos de UI.
+- **Módulos operacionais e pós-serviço:** serviços, visitas técnicas, agenda do técnico, garantias, revisões e alertas internos estão apenas modelados no banco de dados.
+- **Gestão de senhas:** ainda não há endpoint ou tela para redefinição/alteração de senha após o cadastro do usuário.
+- **Containers em modo de desenvolvimento:** os `Dockerfile`s atuais executam `tsx watch` e `next dev --webpack` com volumes montados, configuração adequada para demonstração acadêmica, mas que requer build de produção antes de uso produtivo real.
 
-## Documentação do produto
+---
 
-- [Índice da documentação](docs/README.md)
-- [Contexto do cliente](docs/contexto-cliente.md)
-- [Perguntas ao cliente](docs/perguntas-cliente.md)
-- [Documento de requisitos](docs/documento-requisitos.md)
+## 15. Documentação complementar
 
-O sistema existente de estoque/OS permanece separado. Não há integração
-automática nesta entrega.
+- **[Índice central da documentação](docs/README.md)** — mapa completo dos documentos técnicos e de produto.
+- **[Documentação da API](api/README.md)** — arquitetura do backend, autenticação Better Auth, matriz de permissões, contratos completos dos endpoints e regras de cálculo.
+- **[Documentação do Frontend](frontend/README.md)** — estrutura do Next.js App Router, verificação SSR de sessão, componentes, máscaras e integração HTTP.
+- **[Banco de dados e Prisma](api/prisma/README.md)** e **[Histórico de migrations](api/prisma/migrations/README.md)** — modelo relacional e evolução do schema.
+- **[Guia de CI/CD e Deploy](docs/deploy.md)** — variáveis de ambiente na VM, rede `deadlock_edge`, Caddy central e operação do runner self-hosted.
+- **[Documento de Requisitos (PRD)](docs/documento-requisitos.md)** — escopo planejado do MVP, requisitos funcionais/não funcionais, casos de uso e DER.
+- **[Contexto do cliente](docs/contexto-cliente.md)** e **[Perguntas ao cliente](docs/perguntas-cliente.md)** — registros da etapa inicial de descoberta.

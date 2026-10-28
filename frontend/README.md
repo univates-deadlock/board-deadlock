@@ -1,122 +1,85 @@
 # Frontend TechPro
 
-Next.js App Router, React, TypeScript e Tailwind. Login, navegação autenticada e
-CRUDs de clientes e usuários estão implementados. Dashboard e páginas de
-orçamentos, serviços, garantias e revisões aguardam seus endpoints.
+Aplicação web interna construída com **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS 4**, **Zod 4** e **Better Auth Client**. Para executar a stack completa via Docker Compose, consulte primeiro o [README principal](../README.md).
 
-## O que a tela de login cobre
+---
 
-- **Estados tratados**: verificação da sessão, envio em andamento, sucesso e falha.
-- **Erros distintos**: credencial inválida (`401`) mostra uma mensagem única que não
-  revela se o email existe; usuário inativo (`403`) explica que é preciso procurar um
-  administrador; falha de servidor oferece nova tentativa.
-- **Duplo envio bloqueado**: o botão fica indisponível durante a requisição e o Enter
-  no formulário tem a mesma proteção.
-- **Acessibilidade**: campos com `label` visível, erro ligado ao campo por
-  `aria-describedby`, `aria-invalid` no estado inválido, mensagem em `role="alert"`,
-  foco devolvido ao primeiro campo após falha e navegação completa por teclado.
-- **Responsive layout**: the brand panel sits beside the form from 1024px onward
-  and becomes a compact banner above the form on smaller screens.
+## Funcionalidades implementadas no frontend
 
-A autorização de verdade continua no backend: esconder um botão na interface não é
-controle de acesso, e as rotas protegidas respondem `401`/`403` por conta própria.
+- **Autenticação (`/login`):** validação local com Zod, bloqueio contra duplo envio, tratamento distinto para credenciais inválidas (`400`/`401`), usuário inativo (`403`), excesso de tentativas (`429`) e indisponibilidade da API, acessibilidade por teclado (`aria-invalid`, `aria-describedby`, `role="alert"`) e layout responsivo (painel institucional lateral a partir de `1024px` e banner compacto em telas menores).
+- **Shell autenticado (`app/(protected)/layout.tsx`):** verificação de sessão ativa no servidor via `requireActiveSession()` antes de renderizar qualquer rota interna, barra lateral responsiva (`AppSidebar`) com ocultação visual de "Usuários" para perfis não administradores e cabeçalho (`AppHeader`) com encerramento de sessão.
+- **Dashboard operacional (`/`):** indicadores de orçamentos ("Em aberto", "Aguardando decisão", "Rascunhos" e "Valor em aberto"), lista de orçamentos pendentes e resumo por status calculados no cliente a partir de `GET /api/quotes` (não há endpoint dedicado de dashboard). Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a entrega desses módulos.
+- **Gestão de usuários (`/usuarios`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil (sem alteração de senha) e ativação/desativação em modal acessível (`ADMIN`).
+- **Gestão de clientes (`/clientes`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição com máscaras de CPF/CNPJ e telefone/WhatsApp (enviando apenas dígitos para a API) e ativação/inativação (`ADMIN` e `PLANNING`).
+- **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição de observações, desconto geral e sincronização individual de itens (`syncQuoteItems`), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada somente leitura (`/orcamentos/[id]`) com itens, resumo financeiro e histórico (`ADMIN` e `PLANNING`).
+- **Seções em desenvolvimento (`/servicos`, `/garantias`, `/revisoes`):** renderizam o componente `DevPage` até que os respectivos endpoints sejam implementados na API.
 
-## Rodar
+> **Autorização:** ocultar itens de navegação ou botões melhora a experiência de uso, mas o controle de acesso efetivo ocorre no backend (`401`/`403`).
 
-Na raiz, com Node.js 24:
+---
+
+## Execução local e variáveis de ambiente
+
+Para rodar apenas o frontend no host (com Node.js 24 e a API em execução):
 
 ```bash
 npm run install:all
 npm run dev --prefix frontend
 ```
 
-Abra `http://localhost:3000`. A API deve estar em execução para autenticação.
-`dev` e `build` usam Webpack: no ambiente Docker validado, Turbopack falhou ao
-resolver o import do Tailwind e retornou `500` na tela de login.
-O cliente existente em `lib/auth-client.ts` usa `NEXT_PUBLIC_API_URL`, com fallback
-`http://localhost:4000`. Configure a variável no ambiente ou em `.env.local`:
+Acesse `http://localhost:3000`. Os scripts `dev` e `build` utilizam explicitamente `--webpack` (`next dev --webpack` e `next build --webpack`) para garantir compatibilidade estável com a importação do Tailwind CSS 4 no ambiente validado com Docker.
 
-```dotenv
-NEXT_PUBLIC_API_URL=http://localhost:4000
+| Variável | Escopo | Padrão | Finalidade |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | Navegador e SSR | `http://localhost:4000` | URL base da API acessível pelo navegador |
+| `API_INTERNAL_URL` | Apenas servidor (SSR) | fallback para `NEXT_PUBLIC_API_URL` | URL interna da API usada por `requireActiveSession()` (no Docker Compose: `http://api:4000`) |
+
+- Em desenvolvimento fora do Docker, é possível definir `NEXT_PUBLIC_API_URL=http://localhost:4000` em `frontend/.env.local`.
+- Use o mesmo host (`localhost`) no navegador e nas variáveis de ambiente para que o cookie HTTP-only da sessão seja compartilhado corretamente.
+- **Nunca** exponha `BETTER_AUTH_SECRET`, credenciais de banco ou tokens internos em variáveis prefixadas com `NEXT_PUBLIC_`.
+
+---
+
+## Sessão, chamadas à API e precisão monetária
+
+1. **Proteção SSR (`lib/auth-server.ts`):** `app/(protected)/layout.tsx` executa `requireActiveSession()` no servidor, encaminhando o cabeçalho `cookie` para `GET /api/auth/get-session` com `cache: "no-store"`. Sessões ausentes, inválidas ou com `isActive !== true` redirecionam imediatamente para `/login`; se a API estiver inacessível, o layout falha fechado sem exibir dados internos.
+2. **Cliente de autenticação no navegador (`lib/auth-client.ts`):** instancia `createAuthClient` do Better Auth com `credentials: "include"` para login, consulta de sessão no menu lateral e logout.
+3. **Chamadas aos CRUDs:** todas as requisições `fetch` para `/api/users`, `/api/clients` e `/api/quotes` enviam `credentials: "include"`. Erros das rotas de autenticação expõem `message`; erros dos CRUDs seguem `{ error, fields? }`.
+4. **Valores monetários (`lib/quotes.ts` e `lib/money.ts`):** a API serializa colunas `Decimal` do Prisma como strings; `lib/quotes.ts` converte esses valores para **centavos inteiros** na fronteira de entrada, evitando erros de ponto flutuante na interface.
+
+Consulte todos os contratos de rotas, payloads e códigos de status no [README da API](../api/README.md).
+
+---
+
+## Estrutura de pastas e validação
+
+```text
+frontend/
+├── app/
+│   ├── layout.tsx                  # Layout raiz (pt-BR, fonte Rubik e estilos globais)
+│   ├── globals.css                 # Tokens visuais do tema TechPro e utilitários de tabela
+│   ├── login/page.tsx              # Página pública de login
+│   └── (protected)/                # Grupo autenticado protegido por requireActiveSession()
+│       ├── layout.tsx              # Verificação SSR de sessão e montagem do AppShell
+│       ├── page.tsx                # Dashboard operacional (indicadores de orçamentos)
+│       ├── usuarios/page.tsx       # Tela do CRUD de usuários
+│       ├── clientes/page.tsx       # Tela do CRUD de clientes
+│       ├── orcamentos/             # Listagem/formulário e detalhe (/orcamentos/[id])
+│       └── servicos|garantias|revisoes/  # Placeholders DevPage
+├── components/
+│   ├── layout/                     # AppShell, AppSidebar, AppHeader e DevPage
+│   ├── login/                      # LoginBrandPanel e LoginForm
+│   ├── usuarios/                   # UsuariosPageClient
+│   ├── clientes/                   # ClientesPageClient
+│   ├── orcamentos/                 # OrcamentosPageQuote e QuoteDetailPageClient
+│   └── ui/                         # Alert, Badge, Button, Card, Field, Modal, PageHeader e ícones
+└── lib/                            # auth-client, auth-server, quotes, money, masks e schemas
 ```
 
-For server-side session checks, set `API_INTERNAL_URL` when the Next.js server
-cannot reach the browser-facing API address. Docker Compose already sets it to
-`http://api:4000`. Without it, the server uses `NEXT_PUBLIC_API_URL` and then
-`http://localhost:4000`. The browser must send the Better Auth session cookie to
-the frontend host as well; the local setup uses `localhost` for both ports (or the
-address configured via `APP_HOST` in Docker Compose).
-
-Nunca coloque secret, URL de banco ou senha em variáveis `NEXT_PUBLIC_`.
-
-## Integração com autenticação
-
-`lib/auth-client.ts` instancia Better Auth para React e inclui cookies:
-
-```typescript
-import { authClient } from '@/lib/auth-client';
-
-// Em um Client Component ou handler de interação:
-const { error } = await authClient.signIn.email({ email, password });
-if (error) {
-  // Mostrar a mensagem ao usuário e permanecer na tela de login.
-}
-const { data: session } = await authClient.getSession();
-await authClient.signOut();
-```
-
-Login usa contas criadas por um administrador. Cadastro público está desabilitado.
-A sessão retorna `null` quando inválida; as rotas protegidas respondem `401`.
-Os campos adicionais `role` e `isActive` existem no JSON da sessão; o cliente
-atual não adiciona inferência TypeScript desses campos. Use um DTO validado ao
-consumi-los ou configure `inferAdditionalFields` antes de usá-los tipadamente.
-
-## Protected frontend pages
-
-The `/` page calls `requireActiveSession()` on the server before rendering its
-internal content. The helper forwards the incoming cookie to the trusted API's
-`GET /api/auth/get-session` endpoint without caching the response. Missing,
-invalid, or inactive sessions redirect to `/login` immediately. If the API is
-unavailable, the page fails closed and does not render internal content.
-
-Call the same helper at the start of each future protected page. The API still
-enforces authentication and permissions for its own routes; a frontend redirect
-does not replace those checks.
-
-Chamadas ao CRUD usam a mesma API e precisam incluir cookies:
-
-```typescript
-const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/api/users`, {
-  credentials: 'include',
-});
-```
-
-Com Axios, configure `withCredentials: true`. As rotas de usuários exigem `ADMIN`;
-tratar `403` na interface não substitui a autorização no servidor. Use o mesmo
-host em todas as URLs locais (`localhost`, evitando misturá-lo com `127.0.0.1`).
-Para erros de autenticação, leia `message`; para erros dos CRUDs, leia `error`.
-
-## Pastas e verificações
-
-- `app/`: páginas, layout e estilos do App Router. `app/login/` é a tela de entrada.
-- `components/ui/`: primitivos reutilizáveis (`Button`, `Field`, `Alert`), com as
-  mesmas regras visuais do site institucional.
-- `lib/`: `auth-client.ts` (Better Auth), `auth-server.ts` (verificação da sessão
-  no servidor), máscaras e schemas. Os CRUDs usam `fetch` com
-  `credentials: include` nos respectivos componentes.
-- `public/`: arquivos estáticos.
-
-Os tokens de design (cores, tipografia, espaçamento, raios) ficam em
-`app/globals.css` e vêm do site institucional, para o sistema interno ter a mesma
-identidade visual. Prefira as variáveis do tema a valores fixos nos componentes.
-
-Server Components são o padrão; use Client Components nas interações que
-precisam de estado ou eventos. Leia [o contrato da API](../docs/api-usuarios.md)
-para montar os formulários de cadastro/edição.
+Para validar lint, tipagem TypeScript e build de produção a partir da raiz do repositório:
 
 ```bash
 npm run check:frontend
 ```
 
-O comando da raiz executa lint, TypeScript e build. Não há suíte automatizada na
-entrega atual. O README principal explica como rodar tudo pelo Compose.
+> Não há suíte de testes automatizados de frontend na branch `main`.

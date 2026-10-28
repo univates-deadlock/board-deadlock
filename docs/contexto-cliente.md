@@ -230,7 +230,7 @@ Esses aspectos pertencem à etapa de descoberta e serão tratados na conversa co
 ## Documentos relacionados
 
 - [`perguntas-cliente.md`](./perguntas-cliente.md) — roteiro utilizado para descobrir o problema, necessidades e restrições junto ao cliente.
-- PRD v1 — será elaborado posteriormente com base nas informações obtidas durante a conversa.
+- [`documento-requisitos.md`](./documento-requisitos.md) — documento de requisitos (PRD) elaborado a partir das informações obtidas na etapa de descoberta.
 
 ---
 

@@ -1,16 +1,15 @@
 # Controllers
 
-Recebem `Request`, `Response` e `NextFunction`. Fazem três coisas:
+Recebem `Request`, `Response` (e opcionalmente `NextFunction`) e realizam três responsabilidades:
 
-1. Validam `body` e `params` com os schemas Zod.
-2. Chamam o service usando apenas os dados validados.
-3. Respondem com status HTTP e JSON, ou encaminham o erro com `next(error)`.
+1. Validam `params`, `query` e `body` com os schemas Zod correspondentes.
+2. Chamam o service utilizando apenas dados validados e a identidade verificada em `res.locals.user`.
+3. Respondem com status HTTP e JSON adequados (ou encaminham erros ao `globalErrorHandler` — no Express 5, promises rejeitadas em handlers `async` também são encaminhadas automaticamente).
 
-Em `createUser`, o body é `{ userData: { name, email, role, password } }` e o
-resultado usa `201`. Edição responde `200`; ativação e desativação usam `204`,
-sem corpo. Consulta inexistente gera `AppError` com status `404`.
+Padrões dos controllers atuais:
 
-O ID de quem executa a operação vem de `res.locals.user`, preenchido pelo
-middleware de sessão; nunca do body enviado pelo cliente.
+- `user.controller.ts`: recebe envelope `{ userData }` em `POST`/`PATCH`, responde `201` na criação, `200` na edição e `204` (sem corpo) em ativação, desativação e `DELETE` lógico.
+- `client.controller.ts`: recebe campos diretamente no body, responde `201` na criação e `200` com JSON nas consultas, edições, ativação, inativação e `DELETE` lógico.
+- `quote.controller.ts`: valida filtros de listagem (`req.query`), payload de orçamento e itens, obtém `createdBy` de `res.locals.user.id` e responde `204` na exclusão física de rascunhos (`DRAFT`).
 
-Não faça consultas Prisma ou hashing de senha aqui. Isso pertence ao service.
+Não realize consultas Prisma, cálculos de negócio ou hashing de senha nos controllers; mantenha essas operações em `services/`.
